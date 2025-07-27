@@ -45,7 +45,6 @@ export default function ChapterReader() {
           console.log('Same language chapters:', sameLanguageChapters.length);
         } else {
           setAllChapters([]);
-          setCurrentChapterIndex(-1);
         }
       } catch (error) {
         console.error('Failed to fetch data:', error);
