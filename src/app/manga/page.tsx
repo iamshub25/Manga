@@ -1,10 +1,10 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import MangaCard from '@/components/MangaCard';
 
-export default function MangaPage() {
+function MangaContent() {
   const searchParams = useSearchParams();
   const [manga, setManga] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -98,5 +98,13 @@ export default function MangaPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function MangaPage() {
+  return (
+    <Suspense fallback={<div className="max-w-7xl mx-auto px-4 py-8">Loading...</div>}>
+      <MangaContent />
+    </Suspense>
   );
 }
