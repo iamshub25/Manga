@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Image from "next/image";
 import Link from "next/link";
 import { useParams } from 'next/navigation';
+import Loader from '@/components/Loader';
 
 export default function MangaDetail() {
   const params = useParams();
@@ -15,6 +16,7 @@ export default function MangaDetail() {
   const [sortOrder, setSortOrder] = useState('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [showBackToTop, setShowBackToTop] = useState(false);
   
   const chaptersPerPage = 10;
 
@@ -43,6 +45,19 @@ export default function MangaDetail() {
   }, [id]);
 
   useEffect(() => {
+    const handleScroll = () => {
+      setShowBackToTop(window.scrollY > 300);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  useEffect(() => {
     let filtered = selectedLanguage === 'all' 
       ? chapters 
       : chapters.filter(chapter => chapter.language === selectedLanguage);
@@ -63,7 +78,11 @@ export default function MangaDetail() {
   const currentChapters = filteredChapters.slice(startIndex, startIndex + chaptersPerPage);
 
   if (loading) {
-    return <div className="max-w-7xl mx-auto px-4 py-8">Loading...</div>;
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <Loader />
+      </div>
+    );
   }
 
   if (!manga) {
@@ -234,6 +253,17 @@ export default function MangaDetail() {
           </div>
         </div>
       </div>
+      
+      {/* Back to Top Button */}
+      {showBackToTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-4 right-4 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition-colors z-50"
+          aria-label="Back to top"
+        >
+          ↑
+        </button>
+      )}
     </div>
   );
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import MangaCard from "@/components/MangaCard";
 import SearchBar from "@/components/SearchBar";
+import Loader from "@/components/Loader";
 import Link from "next/link";
 
 export default function Home() {
@@ -33,7 +34,7 @@ export default function Home() {
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="text-center">Loading...</div>
+        <Loader />
       </div>
     );
   }

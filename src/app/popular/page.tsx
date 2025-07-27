@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import MangaCard from '@/components/MangaCard';
+import Loader from '@/components/Loader';
 
 export default function PopularPage() {
   const [manga, setManga] = useState<{ id: string; title: string; cover: string; latestChapter: string; rating: number }[]>([]);
@@ -28,7 +29,7 @@ export default function PopularPage() {
   if (loading) {
     return (
       <div className="max-w-7xl mx-auto px-4 py-8">
-        <div className="text-center">Loading...</div>
+        <Loader />
       </div>
     );
   }
