@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string; chapter: string }> }) {
   try {
-    const { id, chapter } = await params;
+    const { chapter } = await params;
     
     // Get chapter info
     const chapterResponse = await fetch(`https://api.mangadex.org/chapter/${chapter}`);
@@ -22,9 +22,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       return NextResponse.json({ error: 'Chapter pages not available' }, { status: 404 });
     }
     
-    const pages = (pagesData.chapter.data || pagesData.chapter.dataSaver || []).map((filename: string, index: number) => ({
+    // Use data-saver for faster loading
+    const imageFiles = pagesData.chapter.dataSaver || pagesData.chapter.data || [];
+    const pages = imageFiles.map((filename: string, index: number) => ({
       number: index + 1,
-      image: `${pagesData.baseUrl}/data/${pagesData.chapter.hash}/${filename}`
+      image: `${pagesData.baseUrl}/data-saver/${pagesData.chapter.hash}/${filename}`
     }));
     
     const result = {
@@ -35,7 +37,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     };
     
     return NextResponse.json(result);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to fetch chapter pages' }, { status: 500 });
   }
 }

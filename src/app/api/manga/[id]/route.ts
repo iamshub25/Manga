@@ -11,8 +11,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     }
     
     const item = data.data;
-    const coverArt = item.relationships.find((rel: any) => rel.type === 'cover_art');
-    const author = item.relationships.find((rel: any) => rel.type === 'author');
+    const coverArt = item.relationships.find((rel: { type: string; attributes: { fileName: string } }) => rel.type === 'cover_art');
+    const author = item.relationships.find((rel: { type: string; attributes: { name: string } }) => rel.type === 'author');
     
     const manga = {
       id: item.id,
@@ -21,13 +21,13 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
       rating: item.attributes.rating || 0,
       author: author?.attributes?.name || 'Unknown',
       status: item.attributes.status,
-      genres: item.attributes.tags?.filter((tag: any) => tag.attributes.group === 'genre').map((tag: any) => tag.attributes.name.en).filter(Boolean) || [],
+      genres: item.attributes.tags?.filter((tag: { attributes: { group: string; name: { en: string } } }) => tag.attributes.group === 'genre').map((tag: { attributes: { name: { en: string } } }) => tag.attributes.name.en).filter(Boolean) || [],
       description: item.attributes.description.en || Object.values(item.attributes.description)[0] || 'No description available',
       updated: item.attributes.updatedAt
     };
     
     return NextResponse.json(manga);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to fetch manga details' }, { status: 500 });
   }
 }

@@ -33,7 +33,7 @@ export default function SearchPage() {
       {query && (
         <div className="mb-4 sm:mb-6">
           <h1 className="text-xl sm:text-2xl font-bold text-gray-900">
-            Search results for "{query}"
+            Search results for &quot;{query}&quot;
           </h1>
         </div>
       )}
@@ -42,13 +42,13 @@ export default function SearchPage() {
         <div className="text-center py-8 text-sm sm:text-base">Loading...</div>
       ) : results.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
-          {results.map((manga: any) => (
+          {results.map((manga: { id: string; title: string; cover: string; latestChapter: string; rating: number }) => (
             <MangaCard key={manga.id} {...manga} />
           ))}
         </div>
       ) : query ? (
         <div className="text-center py-8 text-gray-500 text-sm sm:text-base">
-          No manga found for "{query}"
+          No manga found for &quot;{query}&quot;
         </div>
       ) : null}
     </div>

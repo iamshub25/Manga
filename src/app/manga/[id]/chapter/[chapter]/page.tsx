@@ -7,23 +7,58 @@ import { useParams } from 'next/navigation';
 export default function ChapterReader() {
   const params = useParams();
   const { id, chapter } = params as { id: string; chapter: string };
-  const [chapterData, setChapterData] = useState<any>(null);
+  const [chapterData, setChapterData] = useState<{ id: string; title: string; mangaTitle: string; pages: { number: number; image: string }[] } | null>(null);
+  const [allChapters, setAllChapters] = useState<{ id: string; number: string; language: string }[]>([]);
+  const [currentChapterIndex, setCurrentChapterIndex] = useState(-1);
+  const [currentLanguage, setCurrentLanguage] = useState<string>('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchChapterData = async () => {
+    const fetchData = async () => {
       try {
-        const res = await fetch(`/api/manga/${id}/chapter/${chapter}`);
-        const data = await res.json();
-        setChapterData(data);
+        const [chapterRes, chaptersRes] = await Promise.all([
+          fetch(`/api/manga/${id}/chapter/${chapter}`),
+          fetch(`/api/manga/${id}/chapters`)
+        ]);
+        const chapterData = await chapterRes.json();
+        const chaptersData = await chaptersRes.json();
+        
+        setChapterData(chapterData);
+        
+        if (Array.isArray(chaptersData)) {
+          // Sort chapters by chapter number
+          const sortedChapters = chaptersData.sort((a: { number: string }, b: { number: string }) => {
+            return parseFloat(a.number) - parseFloat(b.number);
+          });
+          
+          setAllChapters(sortedChapters);
+          const currentChapter = sortedChapters.find((ch: { id: string }) => ch.id === chapter);
+          setCurrentLanguage(currentChapter?.language || '');
+          
+          // Filter chapters by current chapter's language for navigation
+          const sameLanguageChapters = sortedChapters.filter((ch: { language: string }) => 
+            ch.language === currentChapter?.language
+          );
+          
+          const currentIndex = sameLanguageChapters.findIndex((ch: { id: string }) => ch.id === chapter);
+          setCurrentChapterIndex(currentIndex);
+          
+          console.log('Current chapter:', chapter);
+          console.log('Current language:', currentChapter?.language);
+          console.log('Current index in same language:', currentIndex);
+          console.log('Same language chapters:', sameLanguageChapters.length);
+        } else {
+          setAllChapters([]);
+          setCurrentChapterIndex(-1);
+        }
       } catch (error) {
-        console.error('Failed to fetch chapter data:', error);
+        console.error('Failed to fetch data:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    fetchChapterData();
+    fetchData();
   }, [id, chapter]);
 
   if (loading) {
@@ -45,8 +80,23 @@ export default function ChapterReader() {
                 ← Back
               </Link>
               <div className="flex items-center space-x-2">
-                <select className="bg-gray-800 text-white px-2 py-1 rounded text-xs">
-                  <option>Ch {chapter}</option>
+                <select 
+                  value={chapter}
+                  onChange={(e) => {
+                    if (e.target.value) {
+                      window.location.href = `/manga/${id}/chapter/${e.target.value}`;
+                    }
+                  }}
+                  className="bg-gray-800 text-white px-2 py-1 rounded text-xs max-w-24"
+                >
+                  {allChapters
+                    .filter(ch => ch.language === currentLanguage)
+                    .map(ch => (
+                      <option key={ch.id} value={ch.id}>
+                        Ch {ch.number}
+                      </option>
+                    ))
+                  }
                 </select>
                 <button className="bg-blue-600 px-2 py-1 rounded hover:bg-blue-700 text-xs">
                   ⚙
@@ -61,44 +111,76 @@ export default function ChapterReader() {
       {/* Reader Content */}
       <div className="w-full">
         <div className="space-y-0">
-          {chapterData.pages.map((page, index) => (
+          {chapterData.pages?.map((page, index) => (
             <div key={page.number} className="w-full">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={page.image}
                 alt={`Page ${page.number}`}
                 className="w-full h-auto block"
-                loading={index < 3 ? "eager" : "lazy"}
+                loading={index < 5 ? "eager" : "lazy"}
+                decoding="async"
+                fetchPriority={index < 3 ? "high" : "low"}
                 onError={(e) => {
                   e.currentTarget.src = 'https://via.placeholder.com/800x1200?text=Image+Not+Available';
                 }}
               />
+              {/* Preload next few images */}
+              {chapterData.pages && index < chapterData.pages.length - 1 && index < 10 && (
+                <link
+                  rel="preload"
+                  as="image"
+                  href={chapterData.pages[index + 1]?.image}
+                />
+              )}
             </div>
-          ))}
+          )) || <div className="text-center py-8 text-white">No pages available</div>}
         </div>
 
         {/* Navigation */}
         <div className="bg-gray-900 p-3">
           <div className="flex justify-between items-center gap-2">
-            <Link
-              href={`/manga/${id}/chapter/${parseInt(chapter) - 1}`}
-              className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors text-center text-sm font-medium"
-            >
-              ← Previous
-            </Link>
-            
-            <Link
-              href={`/manga/${id}`}
-              className="px-4 bg-gray-600 text-white py-3 rounded-lg hover:bg-gray-700 transition-colors text-center text-sm font-medium"
-            >
-              List
-            </Link>
-            
-            <Link
-              href={`/manga/${id}/chapter/${parseInt(chapter) + 1}`}
-              className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors text-center text-sm font-medium"
-            >
-              Next →
-            </Link>
+            {(() => {
+              const sameLanguageChapters = allChapters.filter(ch => ch.language === currentLanguage);
+              const currentIndex = sameLanguageChapters.findIndex(ch => ch.id === chapter);
+              
+              return (
+                <>
+                  {currentIndex > 0 ? (
+                    <Link
+                      href={`/manga/${id}/chapter/${sameLanguageChapters[currentIndex - 1]?.id}`}
+                      className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors text-center text-sm font-medium"
+                    >
+                      ← Previous
+                    </Link>
+                  ) : (
+                    <div className="flex-1 bg-gray-400 text-white py-3 rounded-lg text-center text-sm font-medium cursor-not-allowed">
+                      ← Previous
+                    </div>
+                  )}
+                  
+                  <Link
+                    href={`/manga/${id}`}
+                    className="px-4 bg-gray-600 text-white py-3 rounded-lg hover:bg-gray-700 transition-colors text-center text-sm font-medium"
+                  >
+                    List
+                  </Link>
+                  
+                  {currentIndex < sameLanguageChapters.length - 1 && currentIndex !== -1 ? (
+                    <Link
+                      href={`/manga/${id}/chapter/${sameLanguageChapters[currentIndex + 1]?.id}`}
+                      className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors text-center text-sm font-medium"
+                    >
+                      Next →
+                    </Link>
+                  ) : (
+                    <div className="flex-1 bg-gray-400 text-white py-3 rounded-lg text-center text-sm font-medium cursor-not-allowed">
+                      Next →
+                    </div>
+                  )}
+                </>
+              );
+            })()}
           </div>
         </div>
       </div>

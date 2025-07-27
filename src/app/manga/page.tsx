@@ -18,21 +18,23 @@ export default function MangaPage() {
   const statuses = ["ongoing", "completed", "hiatus"];
 
   useEffect(() => {
+    const fetchManga = async () => {
+      setLoading(true);
+      const params = new URLSearchParams();
+      if (filters.genre) params.append('genre', filters.genre);
+      if (filters.status) params.append('status', filters.status);
+      params.append('sort', filters.sort);
+
+      const res = await fetch(`/api/manga?${params}`);
+      const data = await res.json();
+      setManga(data);
+      setLoading(false);
+    };
+    
     fetchManga();
   }, [filters]);
 
-  const fetchManga = async () => {
-    setLoading(true);
-    const params = new URLSearchParams();
-    if (filters.genre) params.append('genre', filters.genre);
-    if (filters.status) params.append('status', filters.status);
-    params.append('sort', filters.sort);
 
-    const res = await fetch(`/api/manga?${params}`);
-    const data = await res.json();
-    setManga(data);
-    setLoading(false);
-  };
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
@@ -90,7 +92,7 @@ export default function MangaPage() {
         <div className="text-center py-8">Loading...</div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
-          {manga.map((item: any) => (
+          {manga.map((item: { id: string; title: string; cover: string; latestChapter: string; rating: number }) => (
             <MangaCard key={item.id} {...item} />
           ))}
         </div>

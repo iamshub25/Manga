@@ -12,9 +12,9 @@ export async function GET(request: Request) {
     const response = await fetch(`https://api.mangadex.org/manga?title=${encodeURIComponent(query)}&limit=20&includes[]=cover_art&includes[]=author`);
     const data = await response.json();
     
-    const manga = data.data.map((item: any) => {
-      const coverArt = item.relationships.find((rel: any) => rel.type === 'cover_art');
-      const author = item.relationships.find((rel: any) => rel.type === 'author');
+    const manga = data.data.map((item: { id: string; attributes: { title: { en?: string; [key: string]: string }; lastChapter: string; rating: number; status: string; tags: { attributes: { group: string; name: { en: string } } }[] }; relationships: { type: string; attributes: { fileName?: string; name?: string } }[] }) => {
+      const coverArt = item.relationships.find((rel: { type: string }) => rel.type === 'cover_art');
+      const author = item.relationships.find((rel: { type: string }) => rel.type === 'author');
       
       return {
         id: item.id,
@@ -24,12 +24,12 @@ export async function GET(request: Request) {
         rating: item.attributes.rating || 0,
         author: author?.attributes?.name || 'Unknown',
         status: item.attributes.status,
-        genres: item.attributes.tags?.filter((tag: any) => tag.attributes.group === 'genre').map((tag: any) => tag.attributes.name.en).slice(0, 3) || []
+        genres: item.attributes.tags?.filter((tag: { attributes: { group: string } }) => tag.attributes.group === 'genre').map((tag: { attributes: { name: { en: string } } }) => tag.attributes.name.en).slice(0, 3) || []
       };
     });
     
     return NextResponse.json(manga);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Failed to search manga' }, { status: 500 });
   }
 }

@@ -13,7 +13,7 @@ export default async function PopularPage() {
       <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">Popular Manga</h1>
       
       <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
-        {manga.map((item: any) => (
+        {manga.map((item: { id: string; title: string; cover: string; latestChapter: string; rating: number }) => (
           <MangaCard key={item.id} {...item} />
         ))}
       </div>
