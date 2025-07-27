@@ -1,25 +1,37 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import MangaCard from '@/components/MangaCard';
 
-async function getPopularManga() {
-  try {
-    const baseUrl = process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}` 
-      : process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+export default function PopularPage() {
+  const [manga, setManga] = useState<{ id: string; title: string; cover: string; latestChapter: string; rating: number }[]>([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchManga = async () => {
+      try {
+        const res = await fetch('/api/manga?sort=popular');
+        if (res.ok) {
+          const data = await res.json();
+          setManga(Array.isArray(data) ? data : []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch manga:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
     
-    const res = await fetch(`${baseUrl}/api/manga?sort=popular`, { cache: 'no-store' });
-    
-    if (!res.ok) {
-      return [];
-    }
-    
-    return res.json();
-  } catch {
-    return [];
+    fetchManga();
+  }, []);
+  
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="text-center">Loading...</div>
+      </div>
+    );
   }
-}
-
-export default async function PopularPage() {
-  const manga = await getPopularManga();
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
