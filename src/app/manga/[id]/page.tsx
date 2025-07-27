@@ -8,9 +8,9 @@ import { useParams } from 'next/navigation';
 export default function MangaDetail() {
   const params = useParams();
   const id = params.id as string;
-  const [manga, setManga] = useState<any>(null);
-  const [chapters, setChapters] = useState<any[]>([]);
-  const [filteredChapters, setFilteredChapters] = useState<any[]>([]);
+  const [manga, setManga] = useState<{ id: string; title: string; cover: string; rating: number; author: string; status: string; genres: string[]; description: string; updated: string } | null>(null);
+  const [chapters, setChapters] = useState<{ id: string; number: string; title: string; date: string; pages: number; language: string }[]>([]);
+  const [filteredChapters, setFilteredChapters] = useState<{ id: string; number: string; title: string; date: string; pages: number; language: string }[]>([]);
   const [selectedLanguage, setSelectedLanguage] = useState('en');
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);

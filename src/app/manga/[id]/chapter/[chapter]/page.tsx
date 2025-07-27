@@ -9,7 +9,7 @@ export default function ChapterReader() {
   const { id, chapter } = params as { id: string; chapter: string };
   const [chapterData, setChapterData] = useState<{ id: string; title: string; mangaTitle: string; pages: { number: number; image: string }[] } | null>(null);
   const [allChapters, setAllChapters] = useState<{ id: string; number: string; language: string }[]>([]);
-  const [currentChapterIndex, setCurrentChapterIndex] = useState(-1);
+
   const [currentLanguage, setCurrentLanguage] = useState<string>('');
   const [loading, setLoading] = useState(true);
 
