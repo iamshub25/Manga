@@ -1,8 +1,21 @@
 import MangaCard from '@/components/MangaCard';
 
 async function getLatestManga() {
-  const res = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'}/api/manga?sort=latest`, { cache: 'no-store' });
-  return res.json();
+  try {
+    const baseUrl = process.env.VERCEL_URL 
+      ? `https://${process.env.VERCEL_URL}` 
+      : process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+    
+    const res = await fetch(`${baseUrl}/api/manga?sort=latest`, { cache: 'no-store' });
+    
+    if (!res.ok) {
+      return [];
+    }
+    
+    return res.json();
+  } catch {
+    return [];
+  }
 }
 
 export default async function LatestPage() {
