@@ -12,6 +12,7 @@ export default function MangaDetail() {
   const [chapters, setChapters] = useState<{ id: string; number: string; title: string; date: string; pages: number; language: string }[]>([]);
   const [filteredChapters, setFilteredChapters] = useState<{ id: string; number: string; title: string; date: string; pages: number; language: string }[]>([]);
   const [selectedLanguage, setSelectedLanguage] = useState('en');
+  const [sortOrder, setSortOrder] = useState('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
   
@@ -42,13 +43,20 @@ export default function MangaDetail() {
   }, [id]);
 
   useEffect(() => {
-    if (selectedLanguage === 'all') {
-      setFilteredChapters(chapters);
-    } else {
-      setFilteredChapters(chapters.filter(chapter => chapter.language === selectedLanguage));
-    }
-    setCurrentPage(1); // Reset to first page when language changes
-  }, [selectedLanguage, chapters]);
+    let filtered = selectedLanguage === 'all' 
+      ? chapters 
+      : chapters.filter(chapter => chapter.language === selectedLanguage);
+    
+    // Sort chapters
+    filtered = filtered.sort((a, b) => {
+      const aNum = parseFloat(a.number) || 0;
+      const bNum = parseFloat(b.number) || 0;
+      return sortOrder === 'desc' ? bNum - aNum : aNum - bNum;
+    });
+    
+    setFilteredChapters(filtered);
+    setCurrentPage(1);
+  }, [selectedLanguage, sortOrder, chapters]);
 
   const totalPages = Math.ceil(filteredChapters.length / chaptersPerPage);
   const startIndex = (currentPage - 1) * chaptersPerPage;
@@ -126,13 +134,13 @@ export default function MangaDetail() {
           </div>
 
           <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-4 sm:mb-6 gap-2 sm:gap-0">
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900">Chapters</h2>
-              <div className="flex gap-2">
+            <div className="mb-4 sm:mb-6">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 mb-3">Chapters</h2>
+              <div className="flex flex-col sm:flex-row gap-2">
                 <select 
                   value={selectedLanguage}
                   onChange={(e) => setSelectedLanguage(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm"
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm flex-1 sm:flex-none"
                 >
                   <option value="en">English</option>
                   <option value="all">All Languages</option>
@@ -140,16 +148,20 @@ export default function MangaDetail() {
                     <option key={lang} value={lang}>{lang.toUpperCase()}</option>
                   ))}
                 </select>
+                <select
+                  value={sortOrder}
+                  onChange={(e) => setSortOrder(e.target.value)}
+                  className="px-3 py-2 border border-gray-300 rounded-lg text-sm flex-1 sm:flex-none"
+                >
+                  <option value="desc">Latest First</option>
+                  <option value="asc">Oldest First</option>
+                </select>
                 <button
                   onClick={() => setSelectedLanguage('all')}
-                  className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700"
+                  className="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 flex-1 sm:flex-none"
                 >
                   All Chapters
                 </button>
-                <select className="px-3 py-2 border border-gray-300 rounded-lg text-sm">
-                  <option>Latest First</option>
-                  <option>Oldest First</option>
-                </select>
               </div>
             </div>
 
@@ -175,46 +187,48 @@ export default function MangaDetail() {
 
             {/* Pagination */}
             {totalPages > 1 && (
-              <div className="flex justify-center items-center mt-4 sm:mt-6 gap-2">
-                <button
-                  onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
-                  disabled={currentPage === 1}
-                  className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
-                >
-                  Previous
-                </button>
-                
-                <div className="flex gap-1">
-                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
-                    const pageNum = currentPage <= 3 ? i + 1 : currentPage - 2 + i;
-                    if (pageNum > totalPages) return null;
-                    return (
-                      <button
-                        key={pageNum}
-                        onClick={() => setCurrentPage(pageNum)}
-                        className={`px-3 py-2 rounded-lg text-xs sm:text-sm ${
-                          currentPage === pageNum
-                            ? 'bg-blue-600 text-white'
-                            : 'border border-gray-300 hover:bg-gray-50'
-                        }`}
-                      >
-                        {pageNum}
-                      </button>
-                    );
-                  })}
+              <div className="mt-4 sm:mt-6">
+                <div className="flex justify-center items-center gap-1 sm:gap-2 mb-2">
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+                    disabled={currentPage === 1}
+                    className="px-2 sm:px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
+                  >
+                    Prev
+                  </button>
+                  
+                  <div className="flex gap-1">
+                    {Array.from({ length: Math.min(3, totalPages) }, (_, i) => {
+                      const pageNum = currentPage <= 2 ? i + 1 : currentPage - 1 + i;
+                      if (pageNum > totalPages) return null;
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => setCurrentPage(pageNum)}
+                          className={`px-2 sm:px-3 py-2 rounded-lg text-xs sm:text-sm min-w-[32px] ${
+                            currentPage === pageNum
+                              ? 'bg-blue-600 text-white'
+                              : 'border border-gray-300 hover:bg-gray-50'
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  
+                  <button
+                    onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
+                    disabled={currentPage === totalPages}
+                    className="px-2 sm:px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
+                  >
+                    Next
+                  </button>
                 </div>
                 
-                <button
-                  onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                  disabled={currentPage === totalPages}
-                  className="px-3 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed text-xs sm:text-sm"
-                >
-                  Next
-                </button>
-                
-                <span className="text-xs sm:text-sm text-gray-500 ml-2">
+                <div className="text-center text-xs sm:text-sm text-gray-500">
                   Page {currentPage} of {totalPages} ({filteredChapters.length} chapters)
-                </span>
+                </div>
               </div>
             )}
           </div>
