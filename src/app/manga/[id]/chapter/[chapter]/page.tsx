@@ -40,12 +40,8 @@ export default function ChapterReader() {
             ch.language === currentChapter?.language
           );
           
-          const currentIndex = sameLanguageChapters.findIndex((ch: { id: string }) => ch.id === chapter);
-          setCurrentChapterIndex(currentIndex);
-          
           console.log('Current chapter:', chapter);
           console.log('Current language:', currentChapter?.language);
-          console.log('Current index in same language:', currentIndex);
           console.log('Same language chapters:', sameLanguageChapters.length);
         } else {
           setAllChapters([]);
