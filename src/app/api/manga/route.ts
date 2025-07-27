@@ -33,7 +33,7 @@ export async function GET(request: Request) {
     const response = await fetch(url);
     const data = await response.json();
     
-    const manga = data.data.map((item: { id: string; attributes: { title: { en?: string; [key: string]: string }; lastChapter: string; rating: number; status: string; tags: { attributes: { group: string; name: { en: string } } }[]; updatedAt: string }; relationships: { type: string; attributes: { fileName?: string; name?: string } }[] }) => {
+    const manga = data.data.map((item: { id: string; attributes: { title: Record<string, string>; lastChapter: string; rating: number; status: string; tags: { attributes: { group: string; name: { en: string } } }[]; updatedAt: string }; relationships: { type: string; attributes: { fileName?: string; name?: string } }[] }) => {
       const coverArt = item.relationships.find((rel: { type: string }) => rel.type === 'cover_art');
       const author = item.relationships.find((rel: { type: string }) => rel.type === 'author');
       
