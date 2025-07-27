@@ -1,29 +1,42 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import MangaCard from "@/components/MangaCard";
 import SearchBar from "@/components/SearchBar";
 import Link from "next/link";
 
-async function getManga() {
-  try {
-    const baseUrl = process.env.VERCEL_URL 
-      ? `https://${process.env.VERCEL_URL}` 
-      : process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000';
+export default function Home() {
+  const [allManga, setAllManga] = useState([]);
+  const [loading, setLoading] = useState(true);
+  
+  useEffect(() => {
+    const fetchManga = async () => {
+      try {
+        const res = await fetch('/api/manga?sort=latest');
+        if (res.ok) {
+          const data = await res.json();
+          setAllManga(Array.isArray(data) ? data : []);
+        }
+      } catch (error) {
+        console.error('Failed to fetch manga:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
     
-    const res = await fetch(`${baseUrl}/api/manga?sort=latest`, { cache: 'no-store' });
-    
-    if (!res.ok) {
-      return [];
-    }
-    
-    return res.json();
-  } catch {
-    return [];
+    fetchManga();
+  }, []);
+  
+  const featuredManga = allManga.slice(0, 6);
+  const latestUpdates = allManga.slice(0, 8);
+  
+  if (loading) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        <div className="text-center">Loading...</div>
+      </div>
+    );
   }
-}
-
-export default async function Home() {
-  const allManga = await getManga();
-  const featuredManga = Array.isArray(allManga) ? allManga.slice(0, 6) : [];
-  const latestUpdates = Array.isArray(allManga) ? allManga.slice(0, 8) : [];
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
       {/* Hero Section */}
