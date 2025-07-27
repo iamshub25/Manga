@@ -40,9 +40,7 @@ export default function ChapterReader() {
             ch.language === currentChapter?.language
           );
           
-          console.log('Current chapter:', chapter);
-          console.log('Current language:', currentChapter?.language);
-          console.log('Same language chapters:', sameLanguageChapters.length);
+
         } else {
           setAllChapters([]);
         }

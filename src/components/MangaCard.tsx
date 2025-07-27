@@ -14,13 +14,19 @@ export default function MangaCard({ id, title, cover, latestChapter, rating }: M
     <Link href={`/manga/${id}`} className="group h-full">
       <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
         <div className="relative aspect-[3/4] flex-shrink-0">
-          <Image
-            src={cover}
-            alt={title}
-            fill
-            sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 16vw"
-            className="object-cover group-hover:scale-105 transition-transform duration-300"
-          />
+          {cover ? (
+            <Image
+              src={cover}
+              alt={title}
+              fill
+              sizes="(max-width: 640px) 50vw, (max-width: 768px) 33vw, (max-width: 1024px) 25vw, 16vw"
+              className="object-cover group-hover:scale-105 transition-transform duration-300"
+            />
+          ) : (
+            <div className="w-full h-full bg-gray-300 flex items-center justify-center text-gray-500 text-xs">
+              No Image
+            </div>
+          )}
           <div className="absolute top-1 sm:top-2 right-1 sm:right-2 bg-black/70 text-white px-1 sm:px-2 py-1 rounded text-xs sm:text-sm">
             ★ {rating}
           </div>

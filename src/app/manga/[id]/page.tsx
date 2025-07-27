@@ -75,13 +75,19 @@ export default function MangaDetail() {
         <div className="lg:col-span-1">
           <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
             <div className="relative aspect-[3/4] mb-4">
-              <Image
-                src={manga.cover}
-                alt={manga.title}
-                fill
-                sizes="(max-width: 1024px) 100vw, 33vw"
-                className="object-cover rounded-lg"
-              />
+              {manga.cover ? (
+                <Image
+                  src={manga.cover}
+                  alt={manga.title}
+                  fill
+                  sizes="(max-width: 1024px) 100vw, 33vw"
+                  className="object-cover rounded-lg"
+                />
+              ) : (
+                <div className="w-full h-full bg-gray-300 rounded-lg flex items-center justify-center text-gray-500">
+                  No Image
+                </div>
+              )}
             </div>
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">{manga.title}</h1>
             <div className="flex items-center mb-4">
