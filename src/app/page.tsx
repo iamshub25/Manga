@@ -6,7 +6,7 @@ import SearchBar from "@/components/SearchBar";
 import Link from "next/link";
 
 export default function Home() {
-  const [allManga, setAllManga] = useState([]);
+  const [allManga, setAllManga] = useState<{ id: string; title: string; cover: string; latestChapter: string; rating: number }[]>([]);
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {

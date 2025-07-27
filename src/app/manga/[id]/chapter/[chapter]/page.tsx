@@ -36,9 +36,7 @@ export default function ChapterReader() {
           setCurrentLanguage(currentChapter?.language || '');
           
           // Filter chapters by current chapter's language for navigation
-          const sameLanguageChapters = sortedChapters.filter((ch: { language: string }) => 
-            ch.language === currentChapter?.language
-          );
+
           
 
         } else {
