@@ -1,57 +1,71 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import dbConnect from '@/lib/mongodb';
+import { Manga } from '@/lib/models';
+import { ScrapeService } from '@/lib/scrapeService';
 
-export async function GET(request: Request) {
+export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    searchParams.get('genre');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '20');
+    const sort = searchParams.get('sort') || 'updatedAt';
+    const order = searchParams.get('order') || 'desc';
+    const genre = searchParams.get('genre');
     const status = searchParams.get('status');
-    const sort = searchParams.get('sort') || 'latest';
-    
-    let url = 'https://api.mangadex.org/manga?limit=20&includes[]=cover_art&includes[]=author&availableTranslatedLanguage[]=en';
-    
-    // Add sorting
-    switch (sort) {
-      case 'latest':
-        url += '&order[updatedAt]=desc';
-        break;
-      case 'popular':
-        url += '&order[followedCount]=desc';
-        break;
-      case 'rating':
-        url += '&order[rating]=desc';
-        break;
-      case 'title':
-        url += '&order[title]=asc';
-        break;
-    }
-    
-    // Add status filter
-    if (status) {
-      url += `&status[]=${status}`;
-    }
-    
-    const response = await fetch(url);
-    const data = await response.json();
-    
-    const manga = data.data.map((item: { id: string; attributes: { title: Record<string, string>; lastChapter: string; rating: number; status: string; tags: { attributes: { group: string; name: { en: string } } }[]; updatedAt: string }; relationships: { type: string; attributes: { fileName?: string; name?: string } }[] }) => {
-      const coverArt = item.relationships.find((rel: { type: string }) => rel.type === 'cover_art');
-      const author = item.relationships.find((rel: { type: string }) => rel.type === 'author');
-      
-      return {
-        id: item.id,
-        title: item.attributes.title.en || Object.values(item.attributes.title)[0],
-        cover: coverArt ? `https://uploads.mangadex.org/covers/${item.id}/${coverArt.attributes.fileName}` : 'https://via.placeholder.com/300x400',
-        latestChapter: item.attributes.lastChapter || 'N/A',
-        rating: item.attributes.rating || 0,
-        author: author?.attributes?.name || 'Unknown',
-        status: item.attributes.status,
-        genres: item.attributes.tags?.filter((tag: { attributes: { group: string } }) => tag.attributes.group === 'genre').map((tag: { attributes: { name: { en: string } } }) => tag.attributes.name.en).slice(0, 3) || [],
-        updatedAt: item.attributes.updatedAt
-      };
+
+    await dbConnect();
+
+    const query: any = {};
+    if (genre) query.genres = { $in: [genre] };
+    if (status) query.status = status;
+
+    const sortObj: any = {};
+    sortObj[sort] = order === 'desc' ? -1 : 1;
+
+    const skip = (page - 1) * limit;
+
+    const [mangas, total] = await Promise.all([
+      Manga.find(query)
+        .select('title slug author genres summary cover status rating views updatedAt')
+        .sort(sortObj)
+        .skip(skip)
+        .limit(limit),
+      Manga.countDocuments(query)
+    ]);
+
+    return NextResponse.json({
+      mangas,
+      pagination: {
+        page,
+        limit,
+        total,
+        pages: Math.ceil(total / limit)
+      }
     });
+  } catch (error) {
+    console.error('Manga API error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const { url, site } = await request.json();
     
-    return NextResponse.json(manga);
-  } catch {
-    return NextResponse.json({ error: 'Failed to fetch manga' }, { status: 500 });
+    if (!url || !site) {
+      return NextResponse.json({ error: 'URL and site are required' }, { status: 400 });
+    }
+
+    const scrapeService = new ScrapeService();
+    const mangaId = await scrapeService.scrapeManga(url, site);
+
+    if (!mangaId) {
+      return NextResponse.json({ error: 'Failed to scrape manga' }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true, mangaId });
+  } catch (error) {
+    console.error('Scrape manga error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

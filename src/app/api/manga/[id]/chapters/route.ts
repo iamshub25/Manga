@@ -1,35 +1,36 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import dbConnect from '@/lib/mongodb';
+import { Chapter, Manga } from '@/lib/models';
 
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const response = await fetch(`https://api.mangadex.org/manga/${id}/feed?limit=500&order[chapter]=desc`);
+    await dbConnect();
     
-    if (!response.ok) {
-      return NextResponse.json([]);
+    // Find manga by ID or slug
+    const manga = await Manga.findOne({
+      $or: [{ _id: id }, { slug: id }]
+    });
+    
+    if (!manga) {
+      return NextResponse.json({ error: 'Manga not found' }, { status: 404 });
     }
     
-    const data = await response.json();
+    // Get chapters for this manga
+    const chapters = await Chapter.find({ mangaId: manga._id })
+      .select('title number language pages createdAt')
+      .lean();
     
-    if (!data.data || !Array.isArray(data.data)) {
-      return NextResponse.json([]);
-    }
-    
-    const chapters = data.data
-      .filter((item: { attributes: { chapter: string; pages: number } }) => {
-        return item.attributes && item.attributes.chapter && item.attributes.pages >= 0;
-      })
-      .map((item: { id: string; attributes: { chapter: string; title: string; publishAt: string; pages: number; translatedLanguage: string } }) => ({
-        id: item.id,
-        number: item.attributes.chapter,
-        title: item.attributes.title || `Chapter ${item.attributes.chapter}`,
-        date: new Date(item.attributes.publishAt).toLocaleDateString(),
-        pages: item.attributes.pages || 0,
-        language: item.attributes.translatedLanguage
-      }));
+    // Sort chapters numerically by number
+    chapters.sort((a, b) => {
+      const aNum = parseFloat(a.number) || 0;
+      const bNum = parseFloat(b.number) || 0;
+      return aNum - bNum;
+    });
     
     return NextResponse.json(chapters);
-  } catch {
-    return NextResponse.json([]);
+  } catch (error) {
+    console.error('Error fetching chapters:', error);
+    return NextResponse.json({ error: 'Failed to fetch chapters' }, { status: 500 });
   }
 }

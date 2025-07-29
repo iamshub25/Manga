@@ -1,0 +1,12 @@
+{
+  "functions": {
+    "src/app/api/**/*.ts": {
+      "maxDuration": 60
+    }
+  },
+  "env": {
+    "MONGODB_URI": "@mongodb_uri",
+    "ADMIN_PASSWORD": "@admin_password",
+    "REDIS_URL": "@redis_url"
+  }
+}

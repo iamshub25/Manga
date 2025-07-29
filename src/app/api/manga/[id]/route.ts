@@ -1,33 +1,51 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import dbConnect from '@/lib/mongodb';
+import { Manga } from '@/lib/models';
 
-export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
-    const response = await fetch(`https://api.mangadex.org/manga/${id}?includes[]=cover_art&includes[]=author`);
-    const data = await response.json();
+    await dbConnect();
     
-    if (!data.data) {
+    const manga = await Manga.findOne({
+      $or: [{ _id: id }, { slug: id }]
+    });
+    
+    if (!manga) {
       return NextResponse.json({ error: 'Manga not found' }, { status: 404 });
     }
     
-    const item = data.data;
-    const coverArt = item.relationships.find((rel: { type: string; attributes: { fileName: string } }) => rel.type === 'cover_art');
-    const author = item.relationships.find((rel: { type: string; attributes: { name: string } }) => rel.type === 'author');
-    
-    const manga = {
-      id: item.id,
-      title: item.attributes.title.en || Object.values(item.attributes.title)[0],
-      cover: coverArt ? `https://uploads.mangadex.org/covers/${id}/${coverArt.attributes.fileName}` : 'https://via.placeholder.com/300x400',
-      rating: item.attributes.rating || 0,
-      author: author?.attributes?.name || 'Unknown',
-      status: item.attributes.status,
-      genres: item.attributes.tags?.filter((tag: { attributes: { group: string; name: { en: string } } }) => tag.attributes.group === 'genre').map((tag: { attributes: { name: { en: string } } }) => tag.attributes.name.en).filter(Boolean) || [],
-      description: item.attributes.description.en || Object.values(item.attributes.description)[0] || 'No description available',
-      updated: item.attributes.updatedAt
-    };
+    // Increment view count
+    manga.views = (manga.views || 0) + 1;
+    await manga.save();
     
     return NextResponse.json(manga);
-  } catch {
-    return NextResponse.json({ error: 'Failed to fetch manga details' }, { status: 500 });
+  } catch (error) {
+    console.error('Error fetching manga:', error);
+    return NextResponse.json({ error: 'Failed to fetch manga' }, { status: 500 });
+  }
+}
+
+export async function PUT(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    const { id } = await params;
+    const updates = await request.json();
+    
+    await dbConnect();
+    
+    const manga = await Manga.findOneAndUpdate(
+      { $or: [{ _id: id }, { slug: id }] },
+      { ...updates, updatedAt: new Date() },
+      { new: true }
+    );
+    
+    if (!manga) {
+      return NextResponse.json({ error: 'Manga not found' }, { status: 404 });
+    }
+    
+    return NextResponse.json(manga);
+  } catch (error) {
+    console.error('Error updating manga:', error);
+    return NextResponse.json({ error: 'Failed to update manga' }, { status: 500 });
   }
 }

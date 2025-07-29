@@ -4,24 +4,27 @@ const nextConfig = {
     remotePatterns: [
       {
         protocol: 'https',
-        hostname: 'uploads.mangadex.org',
+        hostname: '*',
         port: '',
         pathname: '/**',
       },
       {
-        protocol: 'https',
-        hostname: 'via.placeholder.com',
+        protocol: 'http',
+        hostname: '*',
         port: '',
         pathname: '/**',
       },
     ],
-    unoptimized: false,
+    unoptimized: true,
   },
   eslint: {
     ignoreDuringBuilds: false,
   },
   typescript: {
     ignoreBuildErrors: false,
+  },
+  experimental: {
+    serverComponentsExternalPackages: ['mongoose'],
   },
 };
 

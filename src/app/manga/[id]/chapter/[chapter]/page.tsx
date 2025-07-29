@@ -8,10 +8,11 @@ export default function ChapterReader() {
   const params = useParams();
   const { id, chapter } = params as { id: string; chapter: string };
   const [chapterData, setChapterData] = useState<{ id: string; title: string; mangaTitle: string; pages: { number: number; image: string }[] } | null>(null);
-  const [allChapters, setAllChapters] = useState<{ id: string; number: string; language: string }[]>([]);
+  const [allChapters, setAllChapters] = useState<{ _id: string; number: string; language: string }[]>([]);
 
   const [currentLanguage, setCurrentLanguage] = useState<string>('');
   const [loading, setLoading] = useState(true);
+  const [showBackToTop, setShowBackToTop] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -32,7 +33,7 @@ export default function ChapterReader() {
           });
           
           setAllChapters(sortedChapters);
-          const currentChapter = sortedChapters.find((ch: { id: string }) => ch.id === chapter);
+          const currentChapter = sortedChapters.find((ch: { _id: string }) => ch._id === chapter);
           setCurrentLanguage(currentChapter?.language || '');
           
           // Filter chapters by current chapter's language for navigation
@@ -51,6 +52,19 @@ export default function ChapterReader() {
 
     fetchData();
   }, [id, chapter]);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setShowBackToTop(window.scrollY > 300);
+    };
+
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
 
   if (loading) {
     return <div className="bg-black min-h-screen flex items-center justify-center text-white">Loading...</div>;
@@ -83,7 +97,7 @@ export default function ChapterReader() {
                   {allChapters
                     .filter(ch => ch.language === currentLanguage)
                     .map(ch => (
-                      <option key={ch.id} value={ch.id}>
+                      <option key={ch._id} value={ch._id}>
                         Ch {ch.number}
                       </option>
                     ))
@@ -106,24 +120,17 @@ export default function ChapterReader() {
             <div key={page.number} className="w-full">
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
-                src={page.image}
+                src={`/api/proxy-image?url=${encodeURIComponent(page.image)}`}
                 alt={`Page ${page.number}`}
                 className="w-full h-auto block"
                 loading={index < 5 ? "eager" : "lazy"}
                 decoding="async"
                 fetchPriority={index < 3 ? "high" : "low"}
                 onError={(e) => {
+                  console.log(`Failed to load image: ${page.image}`);
                   e.currentTarget.src = 'https://via.placeholder.com/800x1200?text=Image+Not+Available';
                 }}
               />
-              {/* Preload next few images */}
-              {chapterData.pages && index < chapterData.pages.length - 1 && index < 10 && (
-                <link
-                  rel="preload"
-                  as="image"
-                  href={chapterData.pages[index + 1]?.image}
-                />
-              )}
             </div>
           )) || <div className="text-center py-8 text-white">No pages available</div>}
         </div>
@@ -133,13 +140,13 @@ export default function ChapterReader() {
           <div className="flex justify-between items-center gap-2">
             {(() => {
               const sameLanguageChapters = allChapters.filter(ch => ch.language === currentLanguage);
-              const currentIndex = sameLanguageChapters.findIndex(ch => ch.id === chapter);
+              const currentIndex = sameLanguageChapters.findIndex(ch => ch._id === chapter);
               
               return (
                 <>
                   {currentIndex > 0 ? (
                     <Link
-                      href={`/manga/${id}/chapter/${sameLanguageChapters[currentIndex - 1]?.id}`}
+                      href={`/manga/${id}/chapter/${sameLanguageChapters[currentIndex - 1]?._id}`}
                       className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors text-center text-sm font-medium"
                     >
                       ← Previous
@@ -159,7 +166,7 @@ export default function ChapterReader() {
                   
                   {currentIndex < sameLanguageChapters.length - 1 && currentIndex !== -1 ? (
                     <Link
-                      href={`/manga/${id}/chapter/${sameLanguageChapters[currentIndex + 1]?.id}`}
+                      href={`/manga/${id}/chapter/${sameLanguageChapters[currentIndex + 1]?._id}`}
                       className="flex-1 bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition-colors text-center text-sm font-medium"
                     >
                       Next →
@@ -175,6 +182,17 @@ export default function ChapterReader() {
           </div>
         </div>
       </div>
+      
+      {/* Back to Top Button */}
+      {showBackToTop && (
+        <button
+          onClick={scrollToTop}
+          className="fixed bottom-4 right-4 bg-blue-600 text-white p-3 rounded-full shadow-lg hover:bg-blue-700 transition-colors z-50"
+          aria-label="Back to top"
+        >
+          ↑
+        </button>
+      )}
     </div>
   );
 }

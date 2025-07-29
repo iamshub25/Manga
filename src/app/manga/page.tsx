@@ -27,7 +27,7 @@ function MangaContent() {
 
       const res = await fetch(`/api/manga?${params}`);
       const data = await res.json();
-      setManga(data);
+      setManga(data.mangas || []);
       setLoading(false);
     };
     
@@ -92,8 +92,8 @@ function MangaContent() {
         <div className="text-center py-8">Loading...</div>
       ) : (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
-          {manga.map((item: { id: string; title: string; cover: string; latestChapter: string; rating: number }) => (
-            <MangaCard key={item.id} {...item} />
+          {manga.map((item: { _id: string; title: string; cover: string; slug: string; rating: number }) => (
+            <MangaCard key={item._id} id={item._id} title={item.title} cover={item.cover} rating={item.rating} />
           ))}
         </div>
       )}

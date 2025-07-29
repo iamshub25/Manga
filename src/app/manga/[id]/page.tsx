@@ -10,9 +10,9 @@ export default function MangaDetail() {
   const params = useParams();
   const id = params.id as string;
   const [manga, setManga] = useState<{ id: string; title: string; cover: string; rating: number; author: string; status: string; genres: string[]; description: string; updated: string } | null>(null);
-  const [chapters, setChapters] = useState<{ id: string; number: string; title: string; date: string; pages: number; language: string }[]>([]);
-  const [filteredChapters, setFilteredChapters] = useState<{ id: string; number: string; title: string; date: string; pages: number; language: string }[]>([]);
-  const [selectedLanguage, setSelectedLanguage] = useState('en');
+  const [chapters, setChapters] = useState<{ _id: string; number: string; title: string; createdAt: string; pages: { number: number; image: string }[]; language: string }[]>([]);
+  const [filteredChapters, setFilteredChapters] = useState<{ _id: string; number: string; title: string; createdAt: string; pages: { number: number; image: string }[]; language: string }[]>([]);
+  const [selectedLanguage, setSelectedLanguage] = useState('all');
   const [sortOrder, setSortOrder] = useState('desc');
   const [currentPage, setCurrentPage] = useState(1);
   const [loading, setLoading] = useState(true);
@@ -62,7 +62,7 @@ export default function MangaDetail() {
       ? chapters 
       : chapters.filter(chapter => chapter.language === selectedLanguage);
     
-    // Sort chapters
+    // Sort chapters numerically
     filtered = filtered.sort((a, b) => {
       const aNum = parseFloat(a.number) || 0;
       const bNum = parseFloat(b.number) || 0;
@@ -103,18 +103,22 @@ export default function MangaDetail() {
           <div className="bg-white rounded-lg shadow-md p-4 sm:p-6">
             <div className="relative aspect-[3/4] mb-4">
               {manga.cover ? (
-                <Image
+                <img
                   src={manga.cover}
                   alt={manga.title}
-                  fill
-                  sizes="(max-width: 1024px) 100vw, 33vw"
-                  className="object-cover rounded-lg"
+                  className="w-full h-full object-cover rounded-lg"
+                  crossOrigin="anonymous"
+                  referrerPolicy="no-referrer"
+                  onError={(e) => {
+                    console.log('Cover image failed:', manga.cover);
+                    e.currentTarget.style.display = 'none';
+                    e.currentTarget.nextElementSibling.style.display = 'flex';
+                  }}
                 />
-              ) : (
-                <div className="w-full h-full bg-gray-300 rounded-lg flex items-center justify-center text-gray-500">
-                  No Image
-                </div>
-              )}
+              ) : null}
+              <div className={`w-full h-full bg-gray-300 rounded-lg flex items-center justify-center text-gray-500 ${manga.cover ? 'hidden' : 'flex'}`}>
+                No Image
+              </div>
             </div>
             <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">{manga.title}</h1>
             <div className="flex items-center mb-4">
@@ -131,7 +135,7 @@ export default function MangaDetail() {
 
             {filteredChapters.length > 0 && (
               <Link
-                href={`/manga/${id}/chapter/${filteredChapters[0].id}`}
+                href={`/manga/${id}/chapter/${filteredChapters[0]._id}`}
                 className="w-full bg-blue-600 text-white py-2 sm:py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors mt-4 text-sm sm:text-base text-center block"
               >
                 Read First Chapter
@@ -161,8 +165,8 @@ export default function MangaDetail() {
                   onChange={(e) => setSelectedLanguage(e.target.value)}
                   className="px-3 py-2 border border-gray-300 rounded-lg text-sm flex-1 sm:flex-none"
                 >
-                  <option value="en">English</option>
                   <option value="all">All Languages</option>
+                  <option value="en">English</option>
                   {availableLanguages.filter(lang => lang !== 'en').map(lang => (
                     <option key={lang} value={lang}>{lang.toUpperCase()}</option>
                   ))}
@@ -187,15 +191,15 @@ export default function MangaDetail() {
             <div className="space-y-2">
               {currentChapters.length > 0 ? currentChapters.map((chapter) => (
                 <Link
-                  key={chapter.id}
-                  href={`/manga/${id}/chapter/${chapter.id}`}
+                  key={chapter._id}
+                  href={`/manga/${id}/chapter/${chapter._id}`}
                   className="flex justify-between items-center p-2 sm:p-3 hover:bg-gray-50 rounded-lg transition-colors"
                 >
                   <div>
                     <div className="font-medium text-gray-900 text-sm sm:text-base">{chapter.title}</div>
-                    <div className="text-xs text-gray-500">{chapter.language?.toUpperCase()} • {chapter.pages} pages</div>
+                    <div className="text-xs text-gray-500">{chapter.language?.toUpperCase()} • {chapter.pages?.length || 0} pages</div>
                   </div>
-                  <div className="text-xs sm:text-sm text-gray-500">{chapter.date}</div>
+                  <div className="text-xs sm:text-sm text-gray-500">{new Date(chapter.createdAt).toLocaleDateString()}</div>
                 </Link>
               )) : (
                 <div className="text-center py-8 text-gray-500">

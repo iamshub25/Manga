@@ -7,16 +7,16 @@ import Loader from "@/components/Loader";
 import Link from "next/link";
 
 export default function Home() {
-  const [allManga, setAllManga] = useState<{ id: string; title: string; cover: string; latestChapter: string; rating: number }[]>([]);
+  const [allManga, setAllManga] = useState<{ _id: string; title: string; cover: string; slug: string; rating: number }[]>([]);
   const [loading, setLoading] = useState(true);
   
   useEffect(() => {
     const fetchManga = async () => {
       try {
-        const res = await fetch('/api/manga?sort=latest');
+        const res = await fetch('/api/manga?sort=updatedAt&limit=20');
         if (res.ok) {
           const data = await res.json();
-          setAllManga(Array.isArray(data) ? data : []);
+          setAllManga(data.mangas || []);
         }
       } catch (error) {
         console.error('Failed to fetch manga:', error);
@@ -63,7 +63,7 @@ export default function Home() {
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
           {featuredManga.map((manga) => (
-            <MangaCard key={manga.id} {...manga} />
+            <MangaCard key={manga._id} id={manga._id} title={manga.title} cover={manga.cover} rating={manga.rating} />
           ))}
         </div>
       </section>
@@ -76,7 +76,7 @@ export default function Home() {
         </div>
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
           {latestUpdates.map((manga) => (
-            <MangaCard key={manga.id} {...manga} />
+            <MangaCard key={manga._id} id={manga._id} title={manga.title} cover={manga.cover} rating={manga.rating} />
           ))}
         </div>
       </section>
