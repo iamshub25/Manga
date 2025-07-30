@@ -14,10 +14,11 @@ function SearchContent() {
   useEffect(() => {
     if (query) {
       setLoading(true);
-      fetch(`/api/search?q=${encodeURIComponent(query)}`)
+      fetch(`/api/manga/search?q=${encodeURIComponent(query)}`)
         .then(res => res.json())
         .then(data => {
-          setResults(data);
+          console.log('Search results:', data);
+          setResults(Array.isArray(data) ? data : []);
           setLoading(false);
         })
         .catch(() => setLoading(false));
@@ -42,8 +43,15 @@ function SearchContent() {
         <div className="text-center py-8 text-sm sm:text-base">Loading...</div>
       ) : results.length > 0 ? (
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
-          {results.map((manga: { id: string; title: string; cover: string; latestChapter: string; rating: number }) => (
-            <MangaCard key={manga.id} {...manga} />
+          {results.map((manga: any) => (
+            <MangaCard 
+              key={manga._id || manga.id} 
+              id={manga._id || manga.id}
+              title={manga.title}
+              cover={manga.cover}
+              rating={manga.rating || 0}
+              latestChapter="N/A"
+            />
           ))}
         </div>
       ) : query ? (
