@@ -8,7 +8,7 @@ import SearchBar from '@/components/SearchBar';
 function SearchContent() {
   const searchParams = useSearchParams();
   const query = searchParams.get('q');
-  const [results, setResults] = useState([]);
+  const [results, setResults] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
 
   useEffect(() => {
