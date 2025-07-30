@@ -44,7 +44,7 @@ export class ScrapeService {
         });
       } else {
         // Update existing manga
-        const existingSource = manga.sources.find(s => s.site === siteName);
+        const existingSource = manga.sources.find((s: any) => s.site === siteName);
         if (existingSource) {
           existingSource.url = url;
           existingSource.lastUpdated = new Date();
