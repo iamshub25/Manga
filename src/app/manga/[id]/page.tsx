@@ -112,7 +112,8 @@ export default function MangaDetail() {
                   onError={(e) => {
                     console.log('Cover image failed:', manga.cover);
                     e.currentTarget.style.display = 'none';
-                    e.currentTarget.nextElementSibling.style.display = 'flex';
+                    const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
+                    if (nextElement) nextElement.style.display = 'flex';
                   }}
                 />
               ) : null}

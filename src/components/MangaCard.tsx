@@ -24,7 +24,8 @@ export default function MangaCard({ id, title, cover, latestChapter, rating }: M
               onError={(e) => {
                 console.log('Card image failed:', cover);
                 e.currentTarget.style.display = 'none';
-                e.currentTarget.nextElementSibling.style.display = 'flex';
+                const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
+                if (nextElement) nextElement.style.display = 'flex';
               }}
             />
           ) : null}
