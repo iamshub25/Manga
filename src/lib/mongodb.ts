@@ -22,7 +22,9 @@ async function dbConnect() {
       bufferCommands: false,
     };
 
+    console.log('Connecting to MongoDB:', MONGODB_URI.replace(/:[^:@]*@/, ':***@'));
     cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+      console.log('MongoDB connected successfully');
       return mongoose;
     });
   }
@@ -30,6 +32,7 @@ async function dbConnect() {
   try {
     cached.conn = await cached.promise;
   } catch (e) {
+    console.error('MongoDB connection failed:', e.message);
     cached.promise = null;
     throw e;
   }
