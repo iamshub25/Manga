@@ -18,19 +18,24 @@ export async function GET(request: NextRequest) {
       try {
         const isMgeko = imageUrl.includes('mangageko.com') || imageUrl.includes('cdn.mangageko.com');
         
+        const headers: Record<string, string> = {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Referer': isMgeko ? 'https://www.mgeko.cc/' : new URL(imageUrl).origin,
+          'Sec-Fetch-Dest': 'image',
+          'Sec-Fetch-Mode': 'no-cors',
+          'Sec-Fetch-Site': 'cross-site',
+        };
+        
+        if (isMgeko) {
+          headers['Origin'] = 'https://www.mgeko.cc';
+        }
+        
         const response = await fetch(imageUrl, {
           signal: controller.signal,
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
-            'Accept': 'image/webp,image/apng,image/svg+xml,image/*,*/*;q=0.8',
-            'Accept-Language': 'en-US,en;q=0.9',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'Referer': isMgeko ? 'https://www.mgeko.cc/' : new URL(imageUrl).origin,
-            'Origin': isMgeko ? 'https://www.mgeko.cc' : undefined,
-            'Sec-Fetch-Dest': 'image',
-            'Sec-Fetch-Mode': 'no-cors',
-            'Sec-Fetch-Site': 'cross-site',
-          }
+          headers
         });
 
         clearTimeout(timeoutId);
