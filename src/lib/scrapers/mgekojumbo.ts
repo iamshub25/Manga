@@ -120,7 +120,7 @@ export class MgekoJumboScraper extends BaseScraper {
       // Check all images and filter for manga pages
       $('img').each((index, element) => {
         const src = $(element).attr('src') || $(element).attr('data-src') || $(element).attr('data-lazy-src');
-        if (src && (src.includes('page') || src.includes('chapter') || src.includes('manga') || src.includes('.jpg') || src.includes('.png') || src.includes('.webp'))) {
+        if (src && (src.includes('page') || src.includes('chapter') || src.includes('manga') || src.includes('.jpg') || src.includes('.png') || src.includes('.webp')) && !src.includes('logo_200x200.png')) {
           // Skip small images (likely UI elements)
           const width = $(element).attr('width');
           const height = $(element).attr('height');

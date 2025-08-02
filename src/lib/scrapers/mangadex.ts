@@ -100,10 +100,12 @@ export class MangadexScraper extends BaseScraper {
       const response = await axios.get(`${this.baseUrl}/at-home/server/${chapterId}`);
       const { baseUrl, chapter } = response.data;
       
-      return chapter.data.map((filename: string, index: number) => ({
-        number: index + 1,
-        image: `${baseUrl}/data/${chapter.hash}/${filename}`
-      }));
+      return chapter.data
+        .filter((filename: string) => !filename.includes('logo_200x200.png'))
+        .map((filename: string, index: number) => ({
+          number: index + 1,
+          image: `${baseUrl}/data/${chapter.hash}/${filename}`
+        }));
     } catch (error) {
       console.error('MangaDx pages error:', error);
       return [];

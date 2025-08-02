@@ -33,7 +33,7 @@ export async function GET(request: NextRequest) {
       Manga.countDocuments(query)
     ]);
 
-    return NextResponse.json({
+    const response = NextResponse.json({
       mangas,
       pagination: {
         page,
@@ -42,6 +42,9 @@ export async function GET(request: NextRequest) {
         pages: Math.ceil(total / limit)
       }
     });
+    
+    response.headers.set('Cache-Control', 'public, max-age=300, stale-while-revalidate=600');
+    return response;
   } catch (error) {
     console.error('Manga API error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

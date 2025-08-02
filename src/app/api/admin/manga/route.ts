@@ -17,7 +17,10 @@ export async function PUT(request: NextRequest) {
     await dbConnect();
     
     const updateData: any = {};
-    if (cover) updateData.cover = cover;
+    if (cover) {
+      updateData.cover = cover;
+      updateData.uploadedCover = true;
+    }
     if (title) {
       updateData.title = title;
       updateData.slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
@@ -47,7 +50,7 @@ export async function POST(request: NextRequest) {
     // Re-scrape manga data
     const { ScrapeService } = await import('@/lib/scrapeService');
     const scrapeService = new ScrapeService();
-    await scrapeService.scrapeManga(manga.sources[0].url, manga.sources[0].site);
+    await scrapeService.scrapeManga(manga.sources[0].url, manga.sources[0].site, mangaId);
     
     return NextResponse.json({ success: true });
   } catch (error) {

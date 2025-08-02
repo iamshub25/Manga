@@ -3,11 +3,13 @@
 import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import MangaCard from '@/components/MangaCard';
+import { useCachedFetch } from '@/hooks/useCache';
 
 function MangaContent() {
   const searchParams = useSearchParams();
   const [manga, setManga] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [pagination, setPagination] = useState({ page: 1, total: 0, pages: 0 });
   const [filters, setFilters] = useState({
     genre: searchParams.get('genre') || '',
     status: searchParams.get('status') || '',
@@ -18,21 +20,30 @@ function MangaContent() {
   const statuses = ["ongoing", "completed", "hiatus"];
 
   useEffect(() => {
-    const fetchManga = async () => {
-      setLoading(true);
-      const params = new URLSearchParams();
-      if (filters.genre) params.append('genre', filters.genre);
-      if (filters.status) params.append('status', filters.status);
-      params.append('sort', filters.sort);
+    setPagination(prev => ({ ...prev, page: 1 }));
+  }, [filters.genre, filters.status, filters.sort]);
 
-      const res = await fetch(`/api/manga?${params}`);
-      const data = await res.json();
+  const params = new URLSearchParams();
+  if (filters.genre) params.append('genre', filters.genre);
+  if (filters.status) params.append('status', filters.status);
+  params.append('sort', filters.sort);
+  params.append('page', pagination.page.toString());
+  params.append('limit', '24');
+  
+  const cacheKey = `manga_${params.toString()}`;
+  const { data, loading: fetchLoading } = useCachedFetch(`/api/manga?${params}`, cacheKey);
+  
+  useEffect(() => {
+    if (data) {
       setManga(data.mangas || []);
+      setPagination(data.pagination || { page: 1, total: 0, pages: 0 });
       setLoading(false);
-    };
-    
-    fetchManga();
-  }, [filters]);
+    }
+  }, [data]);
+  
+  useEffect(() => {
+    setLoading(fetchLoading);
+  }, [fetchLoading]);
 
 
 
@@ -91,11 +102,38 @@ function MangaContent() {
       {loading ? (
         <div className="text-center py-8">Loading...</div>
       ) : (
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
-          {manga.map((item: { _id: string; title: string; cover: string; slug: string; rating: number }) => (
-            <MangaCard key={item._id} id={item._id} title={item.title} cover={item.cover} rating={item.rating} />
-          ))}
-        </div>
+        <>
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+            {manga.map((item: { _id: string; title: string; cover: string; slug: string; rating: number }) => (
+              <MangaCard key={item._id} id={item._id} title={item.title} cover={item.cover} rating={item.rating} />
+            ))}
+          </div>
+          
+          {/* Pagination */}
+          {pagination.pages > 1 && (
+            <div className="flex justify-center items-center mt-8 gap-2">
+              <button
+                onClick={() => setPagination(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
+                disabled={pagination.page === 1}
+                className="px-3 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
+              >
+                Previous
+              </button>
+              
+              <span className="px-4 py-2 text-gray-700">
+                Page {pagination.page} of {pagination.pages}
+              </span>
+              
+              <button
+                onClick={() => setPagination(prev => ({ ...prev, page: Math.min(prev.pages, prev.page + 1) }))}
+                disabled={pagination.page === pagination.pages}
+                className="px-3 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   );

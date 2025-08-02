@@ -8,21 +8,23 @@ export class MgekoScraper extends BaseScraper {
 
   async searchManga(query: string): Promise<MangaData[]> {
     try {
-      const response = await axios.get(`${this.baseUrl}/search?q=${encodeURIComponent(query)}`);
+      const response = await axios.get(`${this.baseUrl}/?s=${encodeURIComponent(query)}`, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+      });
       const $ = cheerio.load(response.data);
       const mangas: MangaData[] = [];
 
-      $('.manga-item, .search-item, [class*="manga"]').each((_, element) => {
+      $('.bs .bsx, .listupd .bs .bsx').each((_, element) => {
         const $el = $(element);
-        const title = $el.find('a').text().trim() || $el.find('.title').text().trim();
+        const title = $el.find('a').attr('title') || $el.find('.tt').text().trim();
         const url = $el.find('a').attr('href');
         const cover = $el.find('img').attr('src');
 
         if (title && url) {
           mangas.push({
             title,
-            url: url.startsWith('http') ? url : `${this.baseUrl}${url}`,
-            cover: cover?.startsWith('http') ? cover : cover ? `${this.baseUrl}${cover}` : undefined
+            url,
+            cover
           });
         }
       });
@@ -36,26 +38,60 @@ export class MgekoScraper extends BaseScraper {
 
   async getMangaDetails(url: string): Promise<MangaData> {
     try {
-      const response = await axios.get(url);
+      const response = await axios.get(url, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+      });
       const $ = cheerio.load(response.data);
 
-      const title = $('h1, .manga-title, .title').first().text().trim();
-      const author = $('.author, .manga-author').text().trim();
-      const summary = $('.summary, .description, .manga-summary').text().trim();
-      const cover = $('img.cover, .manga-cover img, .poster img').attr('src');
+
+
+      const title = $('h1').first().text().split('\n')[0].trim() || 
+                   $('title').text().replace('Read ', '').replace(' Manga Online for Free', '').trim();
       
+      // Generic extraction
+      let author = '';
+      let summary = '';
+      let cover = '';
+      let status = '';
       const genres: string[] = [];
-      $('.genre, .tag, .category').each((_, el) => {
-        const genre = $(el).text().trim();
-        if (genre) genres.push(genre);
+      
+      // Find author
+      $('*').each((_, el) => {
+        const text = $(el).text();
+        if (text.includes('Author') && !author) {
+          author = $(el).next().text().trim() || $(el).parent().find('*:contains("Author")').next().text().trim();
+        }
       });
+      
+      // Find summary/description
+      $('p, div').each((_, el) => {
+        const text = $(el).text().trim();
+        if (text.length > 100 && !summary) {
+          summary = text;
+        }
+      });
+      
+      // Find cover image
+      cover = $('img').first().attr('src') || '';
+      
+      // Find genres from links
+      $('a').each((_, el) => {
+        const href = $(el).attr('href');
+        if (href && (href.includes('genre') || href.includes('tag'))) {
+          const genre = $(el).text().trim();
+          if (genre && !genres.includes(genre)) genres.push(genre);
+        }
+      });
+
+
 
       return {
         title,
         author: author || undefined,
         genres: genres.length > 0 ? genres : undefined,
         summary: summary || undefined,
-        cover: cover?.startsWith('http') ? cover : cover ? `${this.baseUrl}${cover}` : undefined,
+        cover,
+        status: status.includes('completed') ? 'completed' : status.includes('ongoing') ? 'ongoing' : status.includes('hiatus') ? 'hiatus' : undefined,
         url
       };
     } catch (error) {
@@ -66,29 +102,32 @@ export class MgekoScraper extends BaseScraper {
 
   async getChapters(mangaUrl: string): Promise<ChapterData[]> {
     try {
-      const response = await axios.get(mangaUrl);
+      const chaptersUrl = mangaUrl.replace(/\/$/, '') + '/all-chapters/';
+      const response = await axios.get(chaptersUrl, {
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
+      });
       const $ = cheerio.load(response.data);
       const chapters: ChapterData[] = [];
 
-      $('.chapter-item, .chapter, [class*="chapter"]').each((_, element) => {
+      // Extract actual chapter links from the page
+      $('a').each((_, element) => {
         const $el = $(element);
-        const title = $el.find('a').text().trim() || $el.text().trim();
-        const url = $el.find('a').attr('href');
+        const href = $el.attr('href');
+        const text = $el.text().trim();
         
-        // Extract chapter number from title
-        const numberMatch = title.match(/chapter\s*(\d+(?:\.\d+)?)/i) || title.match(/(\d+(?:\.\d+)?)/);
-        const number = numberMatch ? numberMatch[1] : chapters.length.toString();
-
-        if (title && url) {
+        if (href && text && text.match(/\d+-eng-li/)) {
+          const numberMatch = text.match(/(\d+(?:-\d+)?(?:\.\d+)?)/); 
+          const number = numberMatch ? numberMatch[1] : (chapters.length + 1).toString();
+          
           chapters.push({
-            title,
+            title: `Chapter ${number}`,
             number,
-            url: url.startsWith('http') ? url : `${this.baseUrl}${url}`
+            url: href.startsWith('http') ? href : `${this.baseUrl}${href}`
           });
         }
       });
 
-      return chapters.reverse(); // Usually chapters are in reverse order
+      return chapters.reverse();
     } catch (error) {
       console.error('Mgeko chapters error:', error);
       return [];
@@ -98,48 +137,37 @@ export class MgekoScraper extends BaseScraper {
   async getPages(chapterUrl: string): Promise<PageData[]> {
     try {
       const response = await axios.get(chapterUrl, {
-        headers: {
-          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-        }
+        headers: { 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36' }
       });
       const $ = cheerio.load(response.data);
       const pages: PageData[] = [];
 
-      // Log page content for debugging
-      console.log(`Mgeko page HTML length: ${response.data.length}`);
-
-      // Try all possible selectors
       const selectors = [
-        'img',
-        '.page-image',
-        '.reader-image',
-        '.manga-page img',
-        '#reader img',
-        '.chapter-content img',
+        '#readerarea img',
+        '.rdminimal img', 
+        '.reader-area img',
         '.reading-content img',
-        '.page img',
-        'img[src*="page"]',
-        'img[data-src*="page"]',
-        'img[src*="chapter"]',
-        'img[src*="manga"]'
+        '.chapter-content img',
+        'img[src*=".jpg"], img[src*=".png"], img[src*=".jpeg"]',
+        'img'
       ];
 
-      $('img').each((index, element) => {
-        const src = $(element).attr('src') || $(element).attr('data-src') || $(element).attr('data-lazy-src');
-        if (src && (src.includes('page') || src.includes('chapter') || src.includes('manga') || src.includes('.jpg') || src.includes('.png') || src.includes('.webp'))) {
-          if (!pages.find(p => p.image === src)) {
-            pages.push({
-              number: pages.length + 1,
-              image: src.startsWith('http') ? src : `${this.baseUrl}${src}`
-            });
+      for (const selector of selectors) {
+        $(selector).each((index, element) => {
+          const src = $(element).attr('src') || $(element).attr('data-src') || $(element).attr('data-lazy-src');
+          if (src && (src.includes('.jpg') || src.includes('.png') || src.includes('.jpeg')) && !src.includes('/static/img/logo_200x200.png') && !src.includes('logo_200x200.png')) {
+            if (!pages.find(p => p.image === src)) {
+              pages.push({
+                number: pages.length + 1,
+                image: src
+              });
+            }
           }
-        }
-      });
-
-      console.log(`Mgeko scraped ${pages.length} pages from ${chapterUrl}`);
-      if (pages.length === 0) {
-        console.log('No images found, checking all img tags:', $('img').length);
+        });
+        
+        if (pages.length > 0) break;
       }
+
       return pages;
     } catch (error) {
       console.error('Mgeko pages error:', error);

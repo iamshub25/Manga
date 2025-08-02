@@ -76,3 +76,48 @@ pids
 package-lock.json
 yarn.lock
 pnpm-lock.yaml
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Uploads
+/uploads/
+/public/uploads/
+
+# Cache
+.cache/
+*.cache
+
+# Temporary files
+*.tmp
+*.temp
+/tmp/
+
+# Local configuration
+config.local.js
+config.local.json
+
+
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Test coverage
+/coverage/
+.nyc_output/
+
+# ESLint
+.eslintcache
+
+# Prettier
+.prettierignore
+
+# Local env files
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local

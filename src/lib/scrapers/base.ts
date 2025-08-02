@@ -5,6 +5,7 @@ export interface MangaData {
   summary?: string;
   cover?: string;
   status?: 'ongoing' | 'completed' | 'hiatus';
+  totalChapters?: number;
   url: string;
 }
 

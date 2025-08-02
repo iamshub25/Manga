@@ -8,6 +8,7 @@ const MangaSchema = new mongoose.Schema({
   summary: String,
   status: { type: String, enum: ['ongoing', 'completed', 'hiatus'], default: 'ongoing' },
   cover: String,
+  uploadedCover: { type: Boolean, default: false },
   rating: { type: Number, default: 0 },
   views: { type: Number, default: 0 },
   sources: [{

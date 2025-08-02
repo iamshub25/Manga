@@ -19,7 +19,7 @@ export class ScrapeService {
     return results;
   }
 
-  async scrapeManga(url: string, siteName: string): Promise<string | null> {
+  async scrapeManga(url: string, siteName: string, mangaId?: string): Promise<string | null> {
     await dbConnect();
     
     const scraper = scrapers[siteName];
@@ -27,31 +27,48 @@ export class ScrapeService {
 
     try {
       const mangaData = await scraper.getMangaDetails(url);
-      const slug = this.createSlug(mangaData.title);
-
-      let manga = await Manga.findOne({ slug });
+      let manga;
       
-      if (!manga) {
-        manga = new Manga({
-          title: mangaData.title,
-          slug,
-          author: mangaData.author,
-          genres: mangaData.genres,
-          summary: mangaData.summary,
-          cover: mangaData.cover,
-          status: mangaData.status,
-          sources: [{ site: siteName, url, lastUpdated: new Date() }]
-        });
-      } else {
-        // Update existing manga
-        const existingSource = manga.sources.find((s: any) => s.site === siteName);
-        if (existingSource) {
-          existingSource.url = url;
-          existingSource.lastUpdated = new Date();
-        } else {
-          manga.sources.push({ site: siteName, url, lastUpdated: new Date() });
+      if (mangaId) {
+        // Rescraping existing manga
+        manga = await Manga.findById(mangaId);
+        if (manga) {
+          // Update existing manga data
+          manga.author = mangaData.author || manga.author;
+          manga.genres = mangaData.genres || manga.genres;
+          manga.summary = mangaData.summary || manga.summary;
+          // Only update cover if no uploaded cover exists
+          if (!manga.uploadedCover) manga.cover = mangaData.cover || manga.cover;
+          manga.status = mangaData.status || manga.status;
+          manga.updatedAt = new Date();
         }
-        manga.updatedAt = new Date();
+      } else {
+        // New manga scraping
+        const slug = this.createSlug(mangaData.title);
+        manga = await Manga.findOne({ slug });
+        
+        if (!manga) {
+          manga = new Manga({
+            title: mangaData.title,
+            slug,
+            author: mangaData.author,
+            genres: mangaData.genres,
+            summary: mangaData.summary,
+            cover: mangaData.cover,
+            status: mangaData.status,
+            sources: [{ site: siteName, url, lastUpdated: new Date() }]
+          });
+        } else {
+          // Update existing manga
+          const existingSource = manga.sources.find((s: any) => s.site === siteName);
+          if (existingSource) {
+            existingSource.url = url;
+            existingSource.lastUpdated = new Date();
+          } else {
+            manga.sources.push({ site: siteName, url, lastUpdated: new Date() });
+          }
+          manga.updatedAt = new Date();
+        }
       }
 
       await manga.save();
@@ -72,6 +89,21 @@ export class ScrapeService {
 
     try {
       const chapters = await scraper.getChapters(mangaUrl);
+      const manga = await Manga.findById(mangaId);
+      
+      // Use current manga title for folder path (respects renames)
+      const baseFolderPath = manga?.title || 'Unknown';
+      let hasNewChapters = false;
+      
+      // Update existing chapters to use new folder path if manga was renamed
+      const existingChapters = await Chapter.find({ mangaId });
+      for (const chapter of existingChapters) {
+        const currentBasePath = chapter.folderPath?.split('/Chapter')[0];
+        if (currentBasePath && currentBasePath !== baseFolderPath) {
+          chapter.folderPath = `${baseFolderPath}/Chapter ${chapter.number}`;
+          await chapter.save();
+        }
+      }
       
       for (const chapterData of chapters) {
         const existingChapter = await Chapter.findOne({
@@ -83,8 +115,7 @@ export class ScrapeService {
         if (!existingChapter) {
           try {
             const pages = await scraper.getPages(chapterData.url);
-            const manga = await Manga.findById(mangaId);
-            const folderPath = `${manga?.title || 'Unknown'}/Chapter ${chapterData.number}`;
+            const folderPath = `${baseFolderPath}/Chapter ${chapterData.number}`;
             
             const chapter = new Chapter({
               mangaId,
@@ -96,10 +127,24 @@ export class ScrapeService {
             });
 
             await chapter.save();
+            hasNewChapters = true;
           } catch (error) {
             console.error(`Error saving chapter ${chapterData.number}:`, error);
           }
+        } else {
+          // Clean up logo images from existing chapters
+          const hasLogo = existingChapter.pages.some((page: any) => page.image?.includes('logo_200x200.png'));
+          if (hasLogo) {
+            existingChapter.pages = existingChapter.pages.filter((page: any) => !page.image?.includes('logo_200x200.png'));
+            await existingChapter.save();
+          }
         }
+      }
+      
+      // Update manga timestamp if new chapters were added
+      if (hasNewChapters && manga) {
+        manga.updatedAt = new Date();
+        await manga.save();
       }
     } catch (error) {
       console.error(`Error scraping chapters for ${mangaId}:`, error);

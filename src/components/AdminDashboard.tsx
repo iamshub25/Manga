@@ -7,6 +7,7 @@ export default function AdminDashboard() {
   const [chapters, setChapters] = useState<any[]>([]);
   const [groupedChapters, setGroupedChapters] = useState<{[key: string]: any[]}>({});
   const [selectedChapters, setSelectedChapters] = useState<Set<string>>(new Set());
+  const [selectedFolders, setSelectedFolders] = useState<Set<string>>(new Set());
   const [expandedFolders, setExpandedFolders] = useState<Set<string>>(new Set());
   const [loading, setLoading] = useState(false);
   const [scrapeStatus, setScrapeStatus] = useState('');
@@ -108,8 +109,29 @@ export default function AdminDashboard() {
     setSelectedChapters(new Set());
   };
 
+  const selectAllFolders = () => {
+    const allFolders = Object.keys(groupedChapters);
+    setSelectedFolders(new Set(allFolders));
+  };
+
+  const deselectAllFolders = () => {
+    setSelectedFolders(new Set());
+  };
+
   const toggleFolder = (mangaTitle: string) => {
     setExpandedFolders(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(mangaTitle)) {
+        newSet.delete(mangaTitle);
+      } else {
+        newSet.add(mangaTitle);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleFolderSelection = (mangaTitle: string) => {
+    setSelectedFolders(prev => {
       const newSet = new Set(prev);
       if (newSet.has(mangaTitle)) {
         newSet.delete(mangaTitle);
@@ -256,6 +278,37 @@ export default function AdminDashboard() {
     } catch (error) {
       console.error('Error renaming manga:', error);
     }
+  };
+
+  const rescrapeSelectedFolders = async () => {
+    if (selectedFolders.size === 0) return;
+    if (!confirm(`Rescrape ${selectedFolders.size} selected folders? This may take a while.`)) return;
+    
+    setLoading(true);
+    let completed = 0;
+    
+    for (const mangaTitle of selectedFolders) {
+      try {
+        setScrapeStatus(`Rescaping ${mangaTitle} (${completed + 1}/${selectedFolders.size})...`);
+        const mangaId = groupedChapters[mangaTitle]?.[0]?.mangaId;
+        
+        const response = await fetch('/api/admin/manga', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ mangaId })
+        });
+        
+        if (response.ok) completed++;
+      } catch (error) {
+        console.error('Failed to rescrape folder:', error);
+      }
+    }
+    
+    setScrapeStatus(`Selected folders rescrape completed! ${completed}/${selectedFolders.size} successful`);
+    setTimeout(() => setScrapeStatus(''), 5000);
+    setSelectedFolders(new Set());
+    fetchChapters();
+    setLoading(false);
   };
 
   const rescrapeAllFolders = async () => {
@@ -539,6 +592,22 @@ export default function AdminDashboard() {
                 {selectedChapters.size === chapters.length ? 'Deselect All' : 'Select All'}
               </button>
               <button
+                onClick={selectedFolders.size === Object.keys(groupedChapters).length ? deselectAllFolders : selectAllFolders}
+                className="px-2 sm:px-3 py-2 bg-teal-600 text-white rounded hover:bg-teal-700 text-xs sm:text-sm"
+              >
+                {selectedFolders.size === Object.keys(groupedChapters).length ? 'Deselect All Folders' : 'Select All Folders'}
+              </button>
+              {selectedFolders.size > 0 && (
+                <button
+                  onClick={rescrapeSelectedFolders}
+                  disabled={loading}
+                  className="px-2 sm:px-3 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 disabled:opacity-50 text-xs sm:text-sm flex items-center gap-1"
+                >
+                  {loading && <div className="w-3 h-3 border border-white border-t-transparent rounded-full animate-spin"></div>}
+                  Rescrape Selected ({selectedFolders.size})
+                </button>
+              )}
+              <button
                 onClick={rescrapeAllFolders}
                 disabled={loading || Object.keys(groupedChapters).length === 0}
                 className="px-2 sm:px-3 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 disabled:opacity-50 text-xs sm:text-sm flex items-center gap-1"
@@ -562,13 +631,21 @@ export default function AdminDashboard() {
               {Object.entries(groupedChapters).map(([mangaTitle, mangaChapters]) => (
                 <div key={mangaTitle} className="border rounded-lg p-4">
                   <div className="flex items-center justify-between mb-3">
-                    <h3 
-                      className="font-bold text-lg text-blue-600 cursor-pointer hover:text-blue-800 flex items-center gap-2"
-                      onClick={() => toggleFolder(mangaTitle)}
-                    >
-                      {expandedFolders.has(mangaTitle) ? '📂' : '📁'} {mangaTitle}
-                      <span className="text-sm text-gray-500">({mangaChapters.length} chapters)</span>
-                    </h3>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        checked={selectedFolders.has(mangaTitle)}
+                        onChange={() => toggleFolderSelection(mangaTitle)}
+                        className="w-4 h-4"
+                      />
+                      <h3 
+                        className="font-bold text-lg text-blue-600 cursor-pointer hover:text-blue-800 flex items-center gap-2"
+                        onClick={() => toggleFolder(mangaTitle)}
+                      >
+                        {expandedFolders.has(mangaTitle) ? '📂' : '📁'} {mangaTitle}
+                        <span className="text-sm text-gray-500">({mangaChapters.length} chapters)</span>
+                      </h3>
+                    </div>
                     <div className="flex flex-wrap gap-1">
                       <button
                         onClick={() => renameManga(mangaChapters[0]?.mangaId, mangaTitle)}
