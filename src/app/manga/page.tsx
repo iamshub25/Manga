@@ -5,6 +5,21 @@ import { useSearchParams } from 'next/navigation';
 import MangaCard from '@/components/MangaCard';
 import { useCachedFetch } from '@/hooks/useCache';
 
+interface MangaResponse {
+  mangas: Array<{
+    _id: string;
+    title: string;
+    cover: string;
+    slug: string;
+    rating: number;
+  }>;
+  pagination: {
+    page: number;
+    total: number;
+    pages: number;
+  };
+}
+
 function MangaContent() {
   const searchParams = useSearchParams();
   const [manga, setManga] = useState([]);
@@ -31,7 +46,7 @@ function MangaContent() {
   params.append('limit', '24');
   
   const cacheKey = `manga_${params.toString()}`;
-  const { data, loading: fetchLoading } = useCachedFetch(`/api/manga?${params}`, cacheKey);
+  const { data, loading: fetchLoading } = useCachedFetch<MangaResponse>(`/api/manga?${params}`, cacheKey);
   
   useEffect(() => {
     if (data) {
