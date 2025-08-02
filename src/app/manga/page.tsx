@@ -22,7 +22,13 @@ interface MangaResponse {
 
 function MangaContent() {
   const searchParams = useSearchParams();
-  const [manga, setManga] = useState([]);
+  const [manga, setManga] = useState<Array<{
+    _id: string;
+    title: string;
+    cover: string;
+    slug: string;
+    rating: number;
+  }>>([]);
   const [loading, setLoading] = useState(true);
   const [pagination, setPagination] = useState({ page: 1, total: 0, pages: 0 });
   const [filters, setFilters] = useState({
