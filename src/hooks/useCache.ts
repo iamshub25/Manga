@@ -11,7 +11,7 @@ export function useCachedFetch<T>(url: string, cacheKey: string) {
       // Check cache first
       const cached = ClientCache.get(cacheKey);
       if (cached) {
-        setData(cached);
+        setData(cached as T);
         setLoading(false);
         return;
       }
@@ -21,7 +21,7 @@ export function useCachedFetch<T>(url: string, cacheKey: string) {
         if (!response.ok) throw new Error('Failed to fetch');
         
         const result = await response.json();
-        setData(result);
+        setData(result as T);
         ClientCache.set(cacheKey, result);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Unknown error');
