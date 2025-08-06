@@ -23,6 +23,10 @@ export async function POST(request: NextRequest) {
         const results = await scrapeService.searchAllSites(query);
         return NextResponse.json({ results });
 
+      case 'cleanup-logos':
+        const cleanupResult = await scrapeService.cleanupLogoImages();
+        return NextResponse.json({ success: true, ...cleanupResult });
+
       default:
         return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }

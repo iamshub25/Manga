@@ -10,26 +10,29 @@ interface MangaCardProps {
 }
 
 export default function MangaCard({ id, title, cover, latestChapter, rating }: MangaCardProps) {
+  // Filter out logo images and prepare image URL
+  const shouldShowImage = cover && !cover.includes('logo_200x200.png');
+  const imageUrl = shouldShowImage ? 
+    (cover.startsWith('http') ? `/api/proxy-image?url=${encodeURIComponent(cover)}` : `${cover}?t=${Date.now()}`) : 
+    null;
+  
   return (
     <Link href={`/manga/${id}`} className="group h-full">
       <div className="bg-white rounded-lg shadow-md overflow-hidden hover:shadow-lg transition-shadow h-full flex flex-col">
         <div className="relative aspect-[3/4] flex-shrink-0">
-          {cover ? (
+          {imageUrl ? (
             <img
-              src={cover}
+              src={imageUrl}
               alt={title}
               className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-              crossOrigin="anonymous"
-              referrerPolicy="no-referrer"
               onError={(e) => {
-                console.log('Card image failed:', cover);
                 e.currentTarget.style.display = 'none';
                 const nextElement = e.currentTarget.nextElementSibling as HTMLElement;
                 if (nextElement) nextElement.style.display = 'flex';
               }}
             />
           ) : null}
-          <div className={`w-full h-full bg-gray-300 flex items-center justify-center text-gray-500 text-xs ${cover ? 'hidden' : 'flex'}`}>
+          <div className={`w-full h-full bg-gray-300 flex items-center justify-center text-gray-500 text-xs ${imageUrl ? 'hidden' : 'flex'}`}>
             No Image
           </div>
           <div className="absolute top-1 sm:top-2 right-1 sm:right-2 bg-black/70 text-white px-1 sm:px-2 py-1 rounded text-xs sm:text-sm">

@@ -13,7 +13,7 @@ export async function PUT(request: NextRequest) {
   }
 
   try {
-    const { mangaId, cover, title } = await request.json();
+    const { mangaId, cover, title, summary, description, author } = await request.json();
     await dbConnect();
     
     const updateData: any = {};
@@ -25,9 +25,25 @@ export async function PUT(request: NextRequest) {
       updateData.title = title;
       updateData.slug = title.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
     }
+    if (summary !== undefined) {
+      updateData.summary = summary;
+      updateData.uploadedSummary = true;
+    }
+    if (description !== undefined) {
+      updateData.summary = description;
+      updateData.uploadedSummary = true;
+    }
+    if (author !== undefined) {
+      updateData.author = author;
+      updateData.uploadedAuthor = true;
+    }
     
     await Manga.findByIdAndUpdate(mangaId, updateData);
-    return NextResponse.json({ success: true });
+    
+    const response = NextResponse.json({ success: true });
+    // Clear cache for updated manga
+    response.headers.set('Cache-Control', 'no-cache, no-store, must-revalidate');
+    return response;
   } catch (error) {
     return NextResponse.json({ error: 'Server error' }, { status: 500 });
   }

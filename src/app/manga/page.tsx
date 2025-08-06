@@ -69,100 +69,105 @@ function MangaContent() {
 
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
-      <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-6">All Manga</h1>
-      
-      {/* Filters */}
-      <div className="bg-white rounded-lg shadow-md p-4 sm:p-6 mb-6">
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Genre</label>
-            <select 
-              value={filters.genre}
-              onChange={(e) => setFilters({...filters, genre: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-            >
-              <option value="">All Genres</option>
-              {genres.map(genre => (
-                <option key={genre} value={genre}>{genre}</option>
-              ))}
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Status</label>
-            <select 
-              value={filters.status}
-              onChange={(e) => setFilters({...filters, status: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-            >
-              <option value="">All Status</option>
-              {statuses.map(status => (
-                <option key={status} value={status}>{status.charAt(0).toUpperCase() + status.slice(1)}</option>
-              ))}
-            </select>
-          </div>
-          
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-2">Sort By</label>
-            <select 
-              value={filters.sort}
-              onChange={(e) => setFilters({...filters, sort: e.target.value})}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm"
-            >
-              <option value="latest">Latest Updated</option>
-              <option value="popular">Most Popular</option>
-              <option value="rating">Highest Rated</option>
-              <option value="title">Title A-Z</option>
-            </select>
+    <div className="bg-gray-950 min-h-screen">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-8">
+        <h1 className="text-2xl sm:text-3xl font-bold text-white mb-6">All Manga</h1>
+        
+        {/* Filters */}
+        <div className="bg-gray-900 rounded-lg shadow-md p-4 sm:p-6 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Genre</label>
+              <select 
+                value={filters.genre}
+                onChange={(e) => setFilters({...filters, genre: e.target.value})}
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white rounded-lg text-sm"
+              >
+                <option value="">All Genres</option>
+                {genres.map(genre => (
+                  <option key={genre} value={genre}>{genre}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Status</label>
+              <select 
+                value={filters.status}
+                onChange={(e) => setFilters({...filters, status: e.target.value})}
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white rounded-lg text-sm"
+              >
+                <option value="">All Status</option>
+                {statuses.map(status => (
+                  <option key={status} value={status}>{status.charAt(0).toUpperCase() + status.slice(1)}</option>
+                ))}
+              </select>
+            </div>
+            
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">Sort By</label>
+              <select 
+                value={filters.sort}
+                onChange={(e) => setFilters({...filters, sort: e.target.value})}
+                className="w-full px-3 py-2 bg-gray-800 border border-gray-700 text-white rounded-lg text-sm"
+              >
+                <option value="latest">Latest Updated</option>
+                <option value="popular">Most Popular</option>
+                <option value="rating">Highest Rated</option>
+                <option value="title">Title A-Z</option>
+              </select>
+            </div>
           </div>
         </div>
-      </div>
 
-      {/* Results */}
-      {loading ? (
-        <div className="text-center py-8">Loading...</div>
-      ) : (
-        <>
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
-            {manga.map((item: { _id: string; title: string; cover: string; slug: string; rating: number }) => (
-              <MangaCard key={item._id} id={item._id} title={item.title} cover={item.cover} rating={item.rating} />
-            ))}
+        {/* Results */}
+        {loading ? (
+          <div className="text-center py-8">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+            <p className="text-gray-300 text-lg">Loading manga...</p>
           </div>
-          
-          {/* Pagination */}
-          {pagination.pages > 1 && (
-            <div className="flex justify-center items-center mt-8 gap-2">
-              <button
-                onClick={() => setPagination(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
-                disabled={pagination.page === 1}
-                className="px-3 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
-              >
-                Previous
-              </button>
-              
-              <span className="px-4 py-2 text-gray-700">
-                Page {pagination.page} of {pagination.pages}
-              </span>
-              
-              <button
-                onClick={() => setPagination(prev => ({ ...prev, page: Math.min(prev.pages, prev.page + 1) }))}
-                disabled={pagination.page === pagination.pages}
-                className="px-3 py-2 bg-blue-600 text-white rounded disabled:opacity-50"
-              >
-                Next
-              </button>
+        ) : (
+          <>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-3 sm:gap-4">
+              {manga.map((item: { _id: string; title: string; cover: string; slug: string; rating: number }) => (
+                <MangaCard key={item._id} id={item._id} title={item.title} cover={item.cover} rating={item.rating} />
+              ))}
             </div>
-          )}
-        </>
-      )}
+            
+            {/* Pagination */}
+            {pagination.pages > 1 && (
+              <div className="flex justify-center items-center mt-8 gap-2">
+                <button
+                  onClick={() => setPagination(prev => ({ ...prev, page: Math.max(1, prev.page - 1) }))}
+                  disabled={pagination.page === 1}
+                  className="px-3 py-2 bg-blue-600 text-white rounded disabled:opacity-50 hover:bg-blue-700"
+                >
+                  Previous
+                </button>
+                
+                <span className="px-4 py-2 text-gray-300">
+                  Page {pagination.page} of {pagination.pages}
+                </span>
+                
+                <button
+                  onClick={() => setPagination(prev => ({ ...prev, page: Math.min(prev.pages, prev.page + 1) }))}
+                  disabled={pagination.page === pagination.pages}
+                  className="px-3 py-2 bg-blue-600 text-white rounded disabled:opacity-50 hover:bg-blue-700"
+                >
+                  Next
+                </button>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
 
 export default function MangaPage() {
   return (
-    <Suspense fallback={<div className="max-w-7xl mx-auto px-4 py-8">Loading...</div>}>
+    <Suspense fallback={<div className="bg-gray-950 min-h-screen flex items-center justify-center"><div className="text-center"><div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div><p className="text-gray-300 text-lg">Loading...</p></div></div>}>
       <MangaContent />
     </Suspense>
   );

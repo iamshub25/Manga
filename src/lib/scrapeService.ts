@@ -34,11 +34,13 @@ export class ScrapeService {
         manga = await Manga.findById(mangaId);
         if (manga) {
           // Update existing manga data
-          manga.author = mangaData.author || manga.author;
+          // Only update author if no uploaded author exists
+          if (!manga.uploadedAuthor) manga.author = mangaData.author || manga.author;
           manga.genres = mangaData.genres || manga.genres;
-          manga.summary = mangaData.summary || manga.summary;
-          // Only update cover if no uploaded cover exists
-          if (!manga.uploadedCover) manga.cover = mangaData.cover || manga.cover;
+          // Only update summary if no uploaded summary exists
+          if (!manga.uploadedSummary) manga.summary = mangaData.summary || manga.summary;
+          // Only update cover if no uploaded cover exists and scraped cover is not empty
+          if (!manga.uploadedCover && mangaData.cover) manga.cover = mangaData.cover;
           manga.status = mangaData.status || manga.status;
           manga.updatedAt = new Date();
         }
@@ -149,6 +151,41 @@ export class ScrapeService {
     } catch (error) {
       console.error(`Error scraping chapters for ${mangaId}:`, error);
     }
+  }
+
+  async cleanupLogoImages(): Promise<{ cleaned: number }> {
+    await dbConnect();
+    
+    let cleaned = 0;
+    
+    // Clean logo images from chapters
+    const chapters = await Chapter.find({
+      'pages.image': { $regex: 'logo_200x200\.png' }
+    });
+    
+    for (const chapter of chapters) {
+      const originalLength = chapter.pages.length;
+      chapter.pages = chapter.pages.filter((page: any) => !page.image?.includes('logo_200x200.png'));
+      
+      if (chapter.pages.length < originalLength) {
+        await chapter.save();
+        cleaned++;
+      }
+    }
+    
+    // Clean broken MangaDx URLs from manga covers
+    const brokenCovers = await Manga.find({
+      cover: { $regex: 'uploads\.mangadx\.org' }
+    });
+    
+    for (const manga of brokenCovers) {
+      manga.cover = '';
+      manga.uploadedCover = false;
+      await manga.save();
+      cleaned++;
+    }
+    
+    return { cleaned };
   }
 
   private createSlug(title: string): string {

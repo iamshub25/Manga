@@ -28,7 +28,7 @@ export class MangadexScraper extends BaseScraper {
             .map((tag: any) => tag.attributes.name.en)
             .slice(0, 5),
           summary: item.attributes.description?.en,
-          cover: coverArt ? `https://uploads.mangadex.org/covers/${item.id}/${coverArt.attributes.fileName}` : undefined,
+          cover: undefined,
           status: item.attributes.status === 'completed' ? 'completed' : 'ongoing',
           url: `https://mangadex.org/manga/${item.id}`
         };
@@ -60,7 +60,7 @@ export class MangadexScraper extends BaseScraper {
           ?.filter((tag: any) => tag.attributes.group === 'genre')
           .map((tag: any) => tag.attributes.name.en),
         summary: item.attributes.description?.en,
-        cover: coverArt ? `https://uploads.mangadx.org/covers/${item.id}/${coverArt.attributes.fileName}` : undefined,
+        cover: undefined,
         status: item.attributes.status === 'completed' ? 'completed' : 'ongoing',
         url
       };
@@ -85,7 +85,7 @@ export class MangadexScraper extends BaseScraper {
       return response.data.data.map((item: any) => ({
         title: item.attributes.title || `Chapter ${item.attributes.chapter}`,
         number: item.attributes.chapter || '0',
-        url: `https://mangadx.org/chapter/${item.id}`
+        url: `https://mangadex.org/chapter/${item.id}`
       }));
     } catch (error) {
       console.error('MangaDx chapters error:', error);

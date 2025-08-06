@@ -6,9 +6,12 @@ const MangaSchema = new mongoose.Schema({
   author: String,
   genres: [String],
   summary: String,
+  description: { type: String, get: function() { return this.summary; }, set: function(v) { this.summary = v; } },
   status: { type: String, enum: ['ongoing', 'completed', 'hiatus'], default: 'ongoing' },
   cover: String,
   uploadedCover: { type: Boolean, default: false },
+  uploadedSummary: { type: Boolean, default: false },
+  uploadedAuthor: { type: Boolean, default: false },
   rating: { type: Number, default: 0 },
   views: { type: Number, default: 0 },
   sources: [{

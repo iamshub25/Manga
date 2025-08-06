@@ -18,13 +18,10 @@ export class MgekoScraper extends BaseScraper {
         const $el = $(element);
         const title = $el.find('a').attr('title') || $el.find('.tt').text().trim();
         const url = $el.find('a').attr('href');
-        const cover = $el.find('img').attr('src');
-
         if (title && url) {
           mangas.push({
             title,
-            url,
-            cover
+            url
           });
         }
       });
@@ -56,23 +53,29 @@ export class MgekoScraper extends BaseScraper {
       const genres: string[] = [];
       
       // Find author
-      $('*').each((_, el) => {
-        const text = $(el).text();
-        if (text.includes('Author') && !author) {
-          author = $(el).next().text().trim() || $(el).parent().find('*:contains("Author")').next().text().trim();
-        }
-      });
+      author = $('[itemprop="author"]').text().trim() || '';
+      if (!author) {
+        $('*').each((_, el) => {
+          const text = $(el).text();
+          if (text.includes('Author') && !author) {
+            author = $(el).next().text().trim() || $(el).parent().find('*:contains("Author")').next().text().trim();
+          }
+        });
+      }
       
       // Find summary/description
-      $('p, div').each((_, el) => {
-        const text = $(el).text().trim();
-        if (text.length > 100 && !summary) {
-          summary = text;
-        }
-      });
+      summary = $('.description').text().trim().replace(/\s+/g, ' ') || '';
+      if (!summary) {
+        $('p, div').each((_, el) => {
+          const text = $(el).text().trim();
+          if (text.length > 100 && !summary) {
+            summary = text;
+          }
+        });
+      }
       
-      // Find cover image
-      cover = $('img').first().attr('src') || '';
+      // Skip cover scraping - will be uploaded manually
+      cover = '';
       
       // Find genres from links
       $('a').each((_, el) => {

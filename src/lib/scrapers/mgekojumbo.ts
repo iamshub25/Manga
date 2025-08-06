@@ -16,14 +16,10 @@ export class MgekoJumboScraper extends BaseScraper {
         const $el = $(element);
         const title = $el.find('a').text().trim() || $el.find('.title').text().trim();
         const url = $el.find('a').attr('href');
-        const cover = $el.find('img').attr('src') || $el.find('img').attr('data-src');
-
-
         if (title && url) {
           mangas.push({
             title,
-            url: url.startsWith('http') ? url : `${this.baseUrl}${url}`,
-            cover: cover?.startsWith('http') ? cover : cover ? `https://www.mgeko.cc${cover}` : undefined
+            url: url.startsWith('http') ? url : `${this.baseUrl}${url}`
           });
         }
       });
@@ -43,8 +39,6 @@ export class MgekoJumboScraper extends BaseScraper {
       const title = $('h1, .manga-title, .title').first().text().trim();
       const author = $('.author, .manga-author').text().trim();
       const summary = $('.summary, .description, .synopsis').text().trim();
-      const cover = $('.manga-cover img, .cover img').attr('src');
-      
       const genres: string[] = [];
       $('.genre, .tag, .category').each((_, el) => {
         const genre = $(el).text().trim();
@@ -56,7 +50,7 @@ export class MgekoJumboScraper extends BaseScraper {
         author: author || undefined,
         genres: genres.length > 0 ? genres : undefined,
         summary: summary || undefined,
-        cover: cover?.startsWith('http') ? cover : cover ? `https://www.mgeko.cc${cover}` : undefined,
+        cover: undefined,
         url
       };
     } catch (error) {
