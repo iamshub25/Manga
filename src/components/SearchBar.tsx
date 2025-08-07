@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
+import { createPortal } from 'react-dom';
 
 const cache = new Map();
 
@@ -54,10 +55,20 @@ export default function SearchBar({ className = "" }: { className?: string }) {
     handleSearch(query);
   };
 
+  const [inputRect, setInputRect] = useState<DOMRect | null>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (showSuggestions && inputRef.current) {
+      setInputRect(inputRef.current.getBoundingClientRect());
+    }
+  }, [showSuggestions]);
+
   return (
     <div className={`relative ${className}`}>
       <form onSubmit={handleSubmit}>
         <input
+          ref={inputRef}
           type="text"
           placeholder="Search manga..."
           value={query}
@@ -67,22 +78,33 @@ export default function SearchBar({ className = "" }: { className?: string }) {
         />
       </form>
       
-      {showSuggestions && suggestions.length > 0 && (
-        <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded-lg shadow-lg z-[9999] mt-1">
-          {suggestions.map((suggestion, index) => (
-            <div
-              key={index}
-              onMouseDown={(e) => {
-                e.preventDefault();
-                handleSearch(suggestion);
-              }}
-              className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-black border-b last:border-b-0"
-            >
-              {suggestion}
-            </div>
-          ))}
-        </div>
-      )}
+      {showSuggestions && suggestions.length > 0 && inputRect && typeof window !== 'undefined' &&
+        createPortal(
+          <div 
+            className="absolute bg-white border border-gray-300 rounded-lg shadow-lg z-[99999] max-h-60 overflow-y-auto"
+            style={{
+              top: inputRect.bottom + window.scrollY + 4,
+              left: inputRect.left + window.scrollX,
+              width: inputRect.width
+            }}
+          >
+            {suggestions.map((suggestion, index) => (
+              <div
+                key={index}
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  handleSearch(suggestion);
+                }}
+                className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-black border-b last:border-b-0 truncate"
+                title={suggestion}
+              >
+                {suggestion}
+              </div>
+            ))}
+          </div>,
+          document.body
+        )
+      }
     </div>
   );
 }
