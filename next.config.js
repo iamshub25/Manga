@@ -24,6 +24,9 @@ const nextConfig = {
     ignoreBuildErrors: false,
   },
   serverExternalPackages: ['mongoose'],
+  experimental: {
+    webpackBuildWorker: true,
+  },
 };
 
 module.exports = nextConfig;

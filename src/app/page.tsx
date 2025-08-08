@@ -4,11 +4,16 @@ import { useState, useEffect } from 'react';
 import MangaCard from "@/components/MangaCard";
 import SearchBar from "@/components/SearchBar";
 import Loader from "@/components/Loader";
+import RandomManga from "@/components/RandomManga";
+import ReadingProgress from "@/components/ReadingProgress";
+import { useUser } from "@/contexts/UserContext";
 import Link from "next/link";
 
 export default function Home() {
   const [allManga, setAllManga] = useState<{ _id: string; title: string; cover: string; slug: string; rating: number }[]>([]);
+  const [continueReading, setContinueReading] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const { user } = useUser();
   
   useEffect(() => {
     const fetchManga = async () => {
@@ -27,6 +32,27 @@ export default function Home() {
     
     fetchManga();
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      fetchContinueReading();
+    }
+  }, [user]);
+
+  const fetchContinueReading = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/progress/recent', {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setContinueReading(data);
+      }
+    } catch (error) {
+      console.error('Failed to fetch continue reading:', error);
+    }
+  };
   
   const featuredManga = allManga.slice(0, 6);
   const latestUpdates = allManga.slice(0, 8);
@@ -55,8 +81,11 @@ export default function Home() {
               <p className="text-xl md:text-2xl mb-6 text-blue-100">
                 Your ultimate manga reading destination
               </p>
-              <div className="max-w-md">
-                <SearchBar />
+              <div className="flex flex-col sm:flex-row gap-4 max-w-2xl">
+                <div className="flex-1">
+                  <SearchBar />
+                </div>
+                <RandomManga />
               </div>
             </div>
           </div>
@@ -80,6 +109,26 @@ export default function Home() {
           </div>
         </section>
 
+        {/* Continue Reading */}
+        {user && continueReading.length > 0 && (
+          <section className="mb-12">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl md:text-3xl font-bold text-white">📖 Continue Reading</h2>
+              <Link href="/history" className="text-blue-400 hover:text-blue-300 font-medium transition-colors">View All →</Link>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {continueReading.slice(0, 3).map((progress) => (
+                <ReadingProgress
+                  key={progress._id}
+                  mangaId={progress.mangaId._id}
+                  mangaSlug={progress.mangaId.slug}
+                  totalChapters={progress.totalChapters}
+                />
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Featured Manga */}
         <section className="mb-12">
           <div className="flex justify-between items-center mb-6">
@@ -88,7 +137,14 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
             {featuredManga.map((manga) => (
-              <MangaCard key={manga._id} id={manga._id} title={manga.title} cover={manga.cover} rating={manga.rating} />
+              <div key={manga._id} className="relative">
+                <MangaCard id={manga._id} title={manga.title} cover={manga.cover} rating={manga.rating} />
+                {user && (
+                  <div className="absolute top-2 left-2">
+                    {/* BookmarkButton will be added here */}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </section>
@@ -101,7 +157,14 @@ export default function Home() {
           </div>
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
             {latestUpdates.map((manga) => (
-              <MangaCard key={manga._id} id={manga._id} title={manga.title} cover={manga.cover} rating={manga.rating} />
+              <div key={manga._id} className="relative">
+                <MangaCard id={manga._id} title={manga.title} cover={manga.cover} rating={manga.rating} />
+                {user && (
+                  <div className="absolute top-2 left-2">
+                    {/* BookmarkButton will be added here */}
+                  </div>
+                )}
+              </div>
             ))}
           </div>
         </section>
